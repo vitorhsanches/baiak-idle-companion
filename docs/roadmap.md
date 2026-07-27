@@ -4,6 +4,8 @@
 
 Monorepo, domínio, adapter mock, optimizer inicial, painel MV3, preferências locais, testes, documentação e build carregável. Sem integração com o jogo.
 
+O incremento atual adiciona snapshot tipado, adapter DOM defensivo testado somente com fixtures sintéticas, importação local versionada/checksum e métricas teóricas de optimizer. A conexão ao jogo real continua não comprovada.
+
 ## Fase 2 — Leitura read-only
 
 Após confirmar domínios e regras do jogo: provider DOM isolado, allowlist de campos, permissões de host exatas, fixtures sanitizadas e testes contra alterações de markup. Sem credenciais, WebSocket ou mutação.

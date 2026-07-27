@@ -8,6 +8,7 @@ describe('manifest security', () => {
     expect(manifest.permissions).not.toContain('tabs');
     expect(manifest.permissions).not.toContain('scripting');
     expect(manifest.permissions).not.toContain('webRequest');
+    expect(manifest.permissions).not.toContain('webRequestBlocking');
   });
   it('declares Manifest V3 and local entry points only', () => {
     expect(manifest.manifest_version).toBe(3);

@@ -6,6 +6,10 @@
 
 ## Roteiro humano
 
+Confirme o selo Demo mode, navegue por todas as páginas e verifique que não existem controles de venda, movimento ou uso de itens. Quando a importação de catálogo for exposta na interface, valide JSON versão 1 menor que 1 MB e confirme que JSON inválido não substitui o catálogo anterior. Inspecione o console e a rede: não deve haver requests externos, leitura de cookies/storage do jogo ou uso de WebSocket.
+
+**Leitura DOM real: não comprovado em ambiente real.** O adapter foi validado apenas com fixtures sintéticas e não recebe permissão de host nesta versão.
+
 1. Execute `npm run build` na raiz do repositÃ³rio.
 2. Abra `chrome://extensions`, habilite **Modo do desenvolvedor** e clique em **Carregar sem compactaÃ§Ã£o**.
 3. Selecione `dist/extension` e confirme que nÃ£o hÃ¡ erros na ficha da extensÃ£o.

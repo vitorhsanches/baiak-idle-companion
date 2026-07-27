@@ -2,7 +2,7 @@
 
 ## Componentes e dependências
 
-`domain` define Character, Equipment, InventoryItem, Hunt, Monster, CombatSession e Recommendation. Não conhece infraestrutura. `game-adapter` define `GameDataProvider` e entrega snapshots tipados; o MVP fornece `MockGameDataProvider`. `optimizer-core` recebe objetos do domínio e retorna resultados puros. `shared` reúne utilitários neutros. `extension` contém service worker, UI, estado e armazenamento de preferências.
+`domain` define também `CharacterSnapshot`, origem, confiança, catálogos e recomendações. `game-adapter` define `GameDataProvider`, `GameAdapterResult`, adapters mock/DOM e os seletores versionados; `optimizer-core` contém cálculos puros. A extensão mantém apenas UI e dados locais.
 
 ```text
 Chrome side panel → React UI → GameDataProvider → Domain
@@ -10,7 +10,7 @@ Chrome side panel → React UI → GameDataProvider → Domain
                          └──→ Local settings storage
 ```
 
-O fluxo atual começa no provider mock, que devolve um clone do snapshot. O React controla loading, sucesso e erro, e transforma os dados em apresentação. Preferências são carregadas de `chrome.storage.local`; no navegador de desenvolvimento/testes, a mesma interface usa `localStorage`. Nenhum dado sai do dispositivo.
+O fluxo atual começa no provider mock, que devolve um clone do snapshot com origem `demo`. O adapter DOM recebe um `Document` e não está conectado à página até validação do domínio e revisão de permissões. Preferências e catálogos validados ficam em `chrome.storage.local`; nenhum dado sai do dispositivo.
 
 ## Fronteiras
 

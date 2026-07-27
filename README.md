@@ -2,6 +2,8 @@
 
 Extensão Chrome assistiva e **read-only** para explorar análises simuladas de personagem, hunts, inventário e combate. O MVP não lê dados reais do jogo, não coleta credenciais e não executa ações.
 
+O MVP inclui contratos para leitura DOM passiva (ainda não conectada à página), importação manual de catálogos JSON versão 1 com checksum, e cálculos locais. Nenhum dado é enviado a servidores externos.
+
 ## Começar
 
 Requer Node.js 24+ e npm 11+.

@@ -24,7 +24,7 @@ function Hunts({ data, showCompatibility }: { data: GameSnapshot; showCompatibil
   if (!data.hunts.length) return <EmptyState message="Nenhuma hunt simulada." />;
   return <><header><small>ANÁLISE LOCAL</small><h2>Hunts recomendadas</h2><p>Estimativas demonstrativas, sem comandos ao jogo.</p></header>{data.hunts.map((hunt) => <section className="card hunt" key={hunt.id}><div><h3>{hunt.name}</h3><small>Level mínimo {hunt.minimumLevel} · Resistência {hunt.relevantResistance}</small></div>{showCompatibility && <strong className="score">{hunt.compatibility}%</strong>}<div className="metrics"><Metric label="XP/h" value={formatNumber(hunt.estimatedXpHour)} /><Metric label="Gold/h" value={formatNumber(hunt.estimatedGoldHour)} /></div></section>)}</>;
 }
-const labels = { protect: 'Proteger', review: 'Revisar', sellable: 'Vendável', supply: 'Supply' };
+const labels = { protect: 'Proteger', protected: 'Protegido', review: 'Revisar', sellable: 'Candidato a venda', 'sell-candidate': 'Candidato a venda', supply: 'Supply', unknown: 'Desconhecido' };
 function Inventory({ data }: { data: GameSnapshot }) {
   return <><header><small>CLASSIFICAÇÃO SIMULADA</small><h2>Inventário</h2><p>Somente leitura — nenhuma ação de venda disponível.</p></header><section className="card">{data.inventory.map((item) => <div className="row item" key={item.id}><div><strong>{item.name}</strong><small>{item.rarity} · quantidade {item.quantity}</small></div><span className={`tag ${item.classification}`}>{labels[item.classification]}</span></div>)}</section></>;
 }
@@ -48,7 +48,7 @@ export function App() {
   const [data, setData] = useState<GameSnapshot>();
   const [settings, setSettings] = useState(defaultSettings);
   const [error, setError] = useState('');
-  useEffect(() => { Promise.all([provider.readSnapshot(), settingsStore.load()]).then(([snapshot, stored]) => { setData(snapshot); setSettings(stored); }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Erro desconhecido')); }, []);
+  useEffect(() => { Promise.all([provider.readSnapshot(), settingsStore.load()]).then(([result, stored]) => { if (!result.value) throw new Error(result.errors[0] ?? 'Dados indisponíveis'); setData(result.value); setSettings(stored); }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Erro desconhecido')); }, []);
   useEffect(() => { document.documentElement.dataset.theme = settings.theme; }, [settings.theme]);
   let content = <LoadingState />;
   if (error) content = <ErrorState message={error} />;

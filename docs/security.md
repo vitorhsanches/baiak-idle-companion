@@ -15,9 +15,9 @@ Nunca coletar, ler, copiar, registrar ou expor tokens, cookies de autenticação
 ## Permissões
 
 - `sidePanel`: hospeda a interface solicitada.
-- `storage`: persiste somente preferências locais.
+- `storage`: persiste preferências e catálogos locais validados, sem segredos.
 
-Não existem `host_permissions`, permissões de cookies, scripting, tabs, webRequest ou `<all_urls>`. Um provider real exigirá revisão independente e hosts exatos.
+Não existem `host_permissions`, permissões de cookies, scripting, tabs, webRequest ou `<all_urls>`. Nenhuma permissão de host foi adicionada porque o domínio real não foi validado neste ambiente; um provider conectado exigirá revisão independente e host exato.
 
 ## Scripts de página
 
