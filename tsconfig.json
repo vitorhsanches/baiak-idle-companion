@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "types": ["vitest/globals", "@testing-library/jest-dom", "chrome"],
+    "baseUrl": ".",
+    "paths": {
+      "@companion/domain": ["packages/domain/src/index.ts"],
+      "@companion/game-adapter": ["packages/game-adapter/src/index.ts"],
+      "@companion/optimizer-core": ["packages/optimizer-core/src/index.ts"],
+      "@companion/shared": ["packages/shared/src/index.ts"]
+    }
+  },
+  "include": ["apps", "packages", "*.ts"]
+}

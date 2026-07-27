@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Baiak Idle Companion",
+  "description": "Painel assistivo e local para análise read-only do Baiak Idle.",
+  "version": "0.1.0",
+  "permissions": ["sidePanel", "storage"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "side_panel": { "default_path": "index.html" },
+  "action": { "default_title": "Abrir Baiak Idle Companion" }
+}
