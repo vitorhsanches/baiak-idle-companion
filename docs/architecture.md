@@ -12,6 +12,8 @@ Chrome side panel → React UI → GameDataProvider → Domain
 
 O fluxo atual começa no provider mock, que devolve um clone do snapshot com origem `demo`. O adapter DOM recebe um `Document` e não está conectado à página até validação do domínio e revisão de permissões. Preferências e catálogos validados ficam em `chrome.storage.local`; nenhum dado sai do dispositivo.
 
+`localDataStore` é uma abstração versionada (schema 1) sobre `chrome.storage.local`, com fallback para `localStorage` nos testes. Ela agrupa catálogo ativo/histórico, perfil de dano, regras e overrides, snapshots e recomendações. Leitura corrompida volta a defaults seguros; backups só substituem o estado depois de schema/version válidos.
+
 ## Fronteiras
 
 - Domínio: regras e linguagem do produto, sem DOM ou Chrome.

@@ -10,6 +10,8 @@ Confirme o selo Demo mode, navegue por todas as páginas e verifique que não ex
 
 **Leitura DOM real: não comprovado em ambiente real.** O adapter foi validado apenas com fixtures sintéticas e não recebe permissão de host nesta versão.
 
+No Settings, importe um JSON de catálogo menor que 1 MB, abra Hunts para verificar a origem `Imported catalog`, ajuste o perfil Physical e recarregue a extensão. Exporte os dados, limpe-os após confirmação e importe o backup para confirmar a restauração local. O teste manual completo permanece pendente.
+
 1. Execute `npm run build` na raiz do repositÃ³rio.
 2. Abra `chrome://extensions`, habilite **Modo do desenvolvedor** e clique em **Carregar sem compactaÃ§Ã£o**.
 3. Selecione `dist/extension` e confirme que nÃ£o hÃ¡ erros na ficha da extensÃ£o.

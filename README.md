@@ -4,6 +4,8 @@ Extensão Chrome assistiva e **read-only** para explorar análises simuladas de 
 
 O MVP inclui contratos para leitura DOM passiva (ainda não conectada à página), importação manual de catálogos JSON versão 1 com checksum, e cálculos locais. Nenhum dado é enviado a servidores externos.
 
+Catálogos, perfil de dano manual, regras locais de inventário e backups são mantidos localmente e versionados. A exportação inclui os catálogos ativos para permitir restauração offline; o limite de importação de catálogo individual é 1 MB.
+
 ## Começar
 
 Requer Node.js 24+ e npm 11+.
