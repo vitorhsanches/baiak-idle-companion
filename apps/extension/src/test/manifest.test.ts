@@ -4,5 +4,15 @@ describe('manifest security', () => {
     expect(manifest.permissions).toEqual(['sidePanel', 'storage']);
     expect(manifest).not.toHaveProperty('host_permissions');
     expect(JSON.stringify(manifest)).not.toContain('<all_urls>');
+    expect(manifest.permissions).not.toContain('cookies');
+    expect(manifest.permissions).not.toContain('tabs');
+    expect(manifest.permissions).not.toContain('scripting');
+    expect(manifest.permissions).not.toContain('webRequest');
+  });
+  it('declares Manifest V3 and local entry points only', () => {
+    expect(manifest.manifest_version).toBe(3);
+    expect(manifest.background?.service_worker).toBe('background.js');
+    expect(manifest.side_panel?.default_path).toBe('index.html');
+    expect(JSON.stringify(manifest)).not.toMatch(/https?:\/\//);
   });
 });

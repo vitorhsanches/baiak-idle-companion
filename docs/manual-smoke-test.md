@@ -1,0 +1,19 @@
+# Smoke test manual da extensÃ£o
+
+## Status de automaÃ§Ã£o
+
+**NÃ£o comprovado automaticamente.** O projeto nÃ£o inclui Playwright nem um Chromium controlÃ¡vel jÃ¡ instalado. Adicionar essa infraestrutura apenas para o painel lateral aumentaria o escopo e as dependÃªncias do MVP. Os testes Vitest continuam cobrindo renderizaÃ§Ã£o, navegaÃ§Ã£o e persistÃªncia de componentes; `npm run build` verifica o artefato final.
+
+## Roteiro humano
+
+1. Execute `npm run build` na raiz do repositÃ³rio.
+2. Abra `chrome://extensions`, habilite **Modo do desenvolvedor** e clique em **Carregar sem compactaÃ§Ã£o**.
+3. Selecione `dist/extension` e confirme que nÃ£o hÃ¡ erros na ficha da extensÃ£o.
+4. Clique no Ã­cone da extensÃ£o; confirme que o painel lateral abre com `Demo mode` e o personagem `Aegis Knight`.
+5. Navegue por Overview, Hunts, Inventory, Combat e Settings; confira que cada pÃ¡gina renderiza os dados demonstrativos.
+6. Em Settings, altere o tema e desmarque uma preferÃªncia visual. Feche e reabra o painel; confirme a persistÃªncia.
+7. Clique em **Restaurar padrÃµes** e confirme a volta aos valores iniciais.
+8. Abra as ferramentas do painel, recarregue-o e confirme a ausÃªncia de erros nÃ£o tratados no console.
+9. Em `chrome://extensions`, confirme que as Ãºnicas permissÃµes listadas sÃ£o armazenamento e painel lateral.
+
+Essas verificaÃ§Ãµes dependem de interaÃ§Ã£o humana: carregamento pelo Chrome, abertura fÃ­sica do side panel, persistÃªncia atravÃ©s do ciclo de vida do navegador e inspeÃ§Ã£o do console da extensÃ£o.

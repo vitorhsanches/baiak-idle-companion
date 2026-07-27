@@ -6,10 +6,11 @@
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "dev": "vite --config apps/extension/vite.config.ts",
-    "build": "vite build --config apps/extension/vite.config.ts",
+    "build": "vite build --config apps/extension/vite.config.ts && npm run verify:build",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "verify:build": "node scripts/verify-build.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

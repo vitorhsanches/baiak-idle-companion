@@ -5,22 +5,43 @@ export interface Settings {
   notifications: boolean;
   theme: Theme;
 }
+interface StoredSettings extends Settings {
+  version: 1;
+}
 export const defaultSettings: Settings = {
   showCompatibility: true, showCombatBreakdown: true, notifications: false, theme: 'dark'
 };
 const key = 'companion.settings';
+const isTheme = (value: unknown): value is Theme =>
+  value === 'dark' || value === 'light' || value === 'system';
+const sanitizeSettings = (value: unknown): Settings => {
+  if (!value || typeof value !== 'object') return defaultSettings;
+  const candidate = value as Partial<StoredSettings>;
+  return {
+    showCompatibility: typeof candidate.showCompatibility === 'boolean' ? candidate.showCompatibility : defaultSettings.showCompatibility,
+    showCombatBreakdown: typeof candidate.showCombatBreakdown === 'boolean' ? candidate.showCombatBreakdown : defaultSettings.showCombatBreakdown,
+    notifications: typeof candidate.notifications === 'boolean' ? candidate.notifications : defaultSettings.notifications,
+    theme: isTheme(candidate.theme) ? candidate.theme : defaultSettings.theme
+  };
+};
+const deserializeSettings = (value: unknown): Settings => {
+  if (typeof value !== 'string') return sanitizeSettings(value);
+  try { return sanitizeSettings(JSON.parse(value) as unknown); } catch { return defaultSettings; }
+};
+const serializeSettings = (settings: Settings): StoredSettings => ({ version: 1, ...sanitizeSettings(settings) });
 export const settingsStore = {
   async load(): Promise<Settings> {
     if (globalThis.chrome?.storage?.local) {
       const result = await chrome.storage.local.get(key);
-      return { ...defaultSettings, ...(result[key] as Partial<Settings> | undefined) };
+      return deserializeSettings(result[key]);
     }
     const value = localStorage.getItem(key);
-    return value ? { ...defaultSettings, ...(JSON.parse(value) as Partial<Settings>) } : defaultSettings;
+    return deserializeSettings(value);
   },
   async save(settings: Settings): Promise<void> {
-    if (globalThis.chrome?.storage?.local) await chrome.storage.local.set({ [key]: settings });
-    else localStorage.setItem(key, JSON.stringify(settings));
+    const serialized = serializeSettings(settings);
+    if (globalThis.chrome?.storage?.local) await chrome.storage.local.set({ [key]: serialized });
+    else localStorage.setItem(key, JSON.stringify(serialized));
   },
   async reset(): Promise<Settings> {
     await this.save(defaultSettings);
