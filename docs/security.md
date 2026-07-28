@@ -1,5 +1,7 @@
 # Segurança
 
+O manifest mantém apenas `sidePanel` e `storage`; o único content script usa `https://baiakidle.com/jogar/*`, `document_idle` e isolated world padrão. A build verifica fonte e artefatos contra APIs proibidas.
+
 ## Princípio
 
 A extensão é assistiva, local e read-only. O MVP usa mocks e não acessa páginas do jogo.

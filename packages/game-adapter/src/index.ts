@@ -13,7 +13,7 @@ export class MockGameAdapter implements GameDataProvider {
     return { value: { name: c.name, vocation: c.vocation, level: c.level, equipment: c.equipment.map((e) => ({ slot: normalizeSlot(e.slot), name: e.name, imbuements: e.imbuements.map((name) => ({ name })) })), talents: { visiblePoints: c.talentPoints }, currentHunt: this.snapshot.hunts[0] ? { name: this.snapshot.hunts[0].name } : undefined, readAt: now(), source: 'demo', confidence: 'high', unavailableFields: [], parsingErrors: [] }, source: 'demo', confidence: 'high', errors: [], readAt: now() };
   }
 }
-export const gameDomSelectors = { version: 1, characterName: '[data-bic-character-name]', vocation: '[data-bic-vocation]', level: '[data-bic-level]', talentPoints: '[data-bic-talent-points]', equipment: '[data-bic-equipment]', hunt: '[data-bic-current-hunt]' } as const;
+export const gameDomSelectors = { version: 2, characterName: '[data-character-name]', vocation: '[data-vocation]', level: '[data-level], [data-lv]', talentPoints: '[data-talent-points]', equipment: '[data-equipment-slot], [aria-label="Equipamentos"] [data-slot]', hunt: '[data-current-hunt], [aria-label="Hunt"] [data-name]', inventory: '[aria-label="Inventario"] [data-item-id], [data-inventory-open="true"] [data-item-id]' } as const;
 const normalizeSlot = (slot: string) => (['helmet','armor','weapon','shield','legs','boots','ring','amulet'].includes(slot.toLowerCase()) ? slot.toLowerCase() : 'unknown') as CharacterSnapshot['equipment'][number]['slot'];
 const text = (root: ParentNode, selector: string) => root.querySelector(selector)?.textContent?.trim();
 const number = (value?: string) => value && /^\d+$/.test(value) ? Number(value) : undefined;

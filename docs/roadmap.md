@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Fundação opt-in para leitura Live DOM restrita e local.
+- [ ] Validar seletores no Chrome autenticado; **não comprovado em ambiente real**.
+
 ## Fase 1 — Fundação e mock
 
 Monorepo, domínio, adapter mock, optimizer inicial, painel MV3, preferências locais, testes, documentação e build carregável. Sem integração com o jogo.

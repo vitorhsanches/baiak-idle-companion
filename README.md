@@ -1,8 +1,10 @@
 # Baiak Idle Companion
 
-Extensão Chrome assistiva e **read-only** para explorar análises simuladas de personagem, hunts, inventário e combate. O MVP não lê dados reais do jogo, não coleta credenciais e não executa ações.
+Inclui integração experimental Live DOM, local, read-only e desativada por padrão, restrita a `https://baiakidle.com/jogar/*`. Ela nunca executa ações; a compatibilidade autenticada está **não comprovada em ambiente real**. Consulte `docs/live-dom-integration.md`.
 
-O MVP inclui contratos para leitura DOM passiva (ainda não conectada à página), importação manual de catálogos JSON versão 1 com checksum, e cálculos locais. Nenhum dado é enviado a servidores externos.
+Extensão Chrome assistiva e **read-only** para explorar análises locais de personagem, hunts, inventário e combate. O modo demo continua padrão; a leitura real opcional limita-se ao DOM visível, não coleta credenciais e não executa ações.
+
+O MVP inclui contratos para leitura DOM passiva opt-in, importação manual de catálogos JSON versão 1 com checksum e cálculos locais. Nenhum dado é enviado a servidores externos.
 
 Catálogos, perfil de dano manual, regras locais de inventário e backups são mantidos localmente e versionados. A exportação inclui os catálogos ativos para permitir restauração offline; o limite de importação de catálogo individual é 1 MB.
 

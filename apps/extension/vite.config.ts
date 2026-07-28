@@ -28,9 +28,10 @@ export default defineConfig({
     rollupOptions: {
       input: {
         sidepanel: resolve(__dirname, 'index.html'),
-        background: resolve(__dirname, 'src/background/index.ts')
+        background: resolve(__dirname, 'src/background/index.ts'),
+        content: resolve(__dirname, 'src/content/index.ts')
       },
-      output: { entryFileNames: (chunk) => chunk.name === 'background' ? 'background.js' : 'assets/[name]-[hash].js' }
+      output: { entryFileNames: (chunk) => ['background', 'content'].includes(chunk.name) ? `${chunk.name}.js` : 'assets/[name]-[hash].js' }
     }
   }
 });

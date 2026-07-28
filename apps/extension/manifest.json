@@ -5,6 +5,13 @@
   "version": "0.1.0",
   "permissions": ["sidePanel", "storage"],
   "background": { "service_worker": "background.js", "type": "module" },
+  "content_scripts": [
+    {
+      "matches": ["https://baiakidle.com/jogar/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "side_panel": { "default_path": "index.html" },
   "action": { "default_title": "Abrir Baiak Idle Companion" }
 }

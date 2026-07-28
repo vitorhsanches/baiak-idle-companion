@@ -1,5 +1,7 @@
 # Arquitetura
 
+A integração real segue `content script isolado → protocolo validado → background → side panel`. O adapter é a única camada com seletores; a UI recebe snapshots sanitizados.
+
 ## Componentes e dependências
 
 `domain` define também `CharacterSnapshot`, origem, confiança, catálogos e recomendações. `game-adapter` define `GameDataProvider`, `GameAdapterResult`, adapters mock/DOM e os seletores versionados; `optimizer-core` contém cálculos puros. A extensão mantém apenas UI e dados locais.

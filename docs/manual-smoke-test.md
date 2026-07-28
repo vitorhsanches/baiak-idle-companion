@@ -23,3 +23,8 @@ No Settings, importe um JSON de catálogo menor que 1 MB, abra Hunts para verifi
 9. Em `chrome://extensions`, confirme que as Ãºnicas permissÃµes listadas sÃ£o armazenamento e painel lateral.
 
 Essas verificaÃ§Ãµes dependem de interaÃ§Ã£o humana: carregamento pelo Chrome, abertura fÃ­sica do side panel, persistÃªncia atravÃ©s do ciclo de vida do navegador e inspeÃ§Ã£o do console da extensÃ£o.
+## Live DOM — pendente
+
+Recompile e recarregue; abra `https://baiakidle.com/jogar/`; confirme ausência de leitura desabilitada; habilite; confirme detecção; abra manualmente personagem/equipamentos; atualize; confira campos Live DOM; feche um painel e confira indisponibilidade; exporte o diagnóstico e revise dados sensíveis; desabilite; limpe snapshots; confira console e ausência de ações automáticas.
+
+O Codex não executou este roteiro no Chrome do usuário: **não comprovado em ambiente real**.

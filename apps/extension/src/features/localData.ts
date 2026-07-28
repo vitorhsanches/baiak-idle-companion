@@ -9,8 +9,9 @@ export const defaultProfile: DamageProfile = { elements: { physical: 1 } };
 export const defaultRules: InventoryRule[] = [{ id: 'protect-rare', enabled: true, kind: 'rarity', value: 'epic', classification: 'protected' }, { id: 'supply-potion', enabled: true, kind: 'exact-name', value: 'Ultimate Health Potion', classification: 'supply' }];
 export const defaults = (): LocalData => ({ version: 1, catalogHistory: [], damageProfile: defaultProfile, damageOrigin: 'demo', inventoryRules: defaultRules, overrides: {}, snapshots: [], recommendations: [] });
 const key = 'companion.local-data.v1';
-const get = async (): Promise<unknown> => globalThis.chrome?.storage?.local ? (await chrome.storage.local.get(key))[key] : localStorage.getItem(key);
-const set = async (value: LocalData): Promise<void> => { if (globalThis.chrome?.storage?.local) await chrome.storage.local.set({ [key]: value }); else localStorage.setItem(key, JSON.stringify(value)); };
+let memoryFallback: LocalData | undefined;
+const get = async (): Promise<unknown> => globalThis.chrome?.storage?.local ? (await chrome.storage.local.get(key))[key] : memoryFallback;
+const set = async (value: LocalData): Promise<void> => { if (globalThis.chrome?.storage?.local) await chrome.storage.local.set({ [key]: value }); else memoryFallback = structuredClone(value); };
 const parse = (value: unknown): LocalData => { try { const raw = typeof value === 'string' ? JSON.parse(value) : value; if (!raw || typeof raw !== 'object' || (raw as { version?: unknown }).version !== 1) return defaults(); const item = raw as Partial<LocalData>; return { ...defaults(), ...item, catalogHistory: Array.isArray(item.catalogHistory) ? item.catalogHistory : [], inventoryRules: Array.isArray(item.inventoryRules) ? item.inventoryRules : defaultRules, overrides: item.overrides && typeof item.overrides === 'object' ? item.overrides : {} }; } catch { return defaults(); } };
 export const localDataStore = {
   async load(): Promise<LocalData> { return parse(await get()); },

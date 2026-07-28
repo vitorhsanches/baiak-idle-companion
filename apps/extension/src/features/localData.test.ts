@@ -1,7 +1,6 @@
 import { classifyItem, defaults, localDataStore } from './localData';
 
 describe('local data', () => {
-  beforeEach(() => localStorage.clear());
   it('initializes a versioned local schema and exports it', async () => { expect((await localDataStore.load()).version).toBe(1); expect(JSON.parse(await localDataStore.export()).formatVersion).toBe(1); });
   it('rejects a corrupt backup without replacing stored data', async () => { await expect(localDataStore.import('{')).rejects.toThrow(); expect((await localDataStore.load()).version).toBe(1); });
   it('protects equipped, manual and unknown items before sell rules', () => {

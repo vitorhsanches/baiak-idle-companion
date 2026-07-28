@@ -25,6 +25,7 @@ Baiak Idle Companion é uma extensão Chrome assistiva para apresentar análises
 ## Segurança
 
 - A operação é read-only.
+- A integração DOM opt-in usa exclusivamente `https://baiakidle.com/jogar/*`, isolated world e elementos já visíveis.
 - Nunca ler tokens, cookies, Local/Session Storage do jogo ou credenciais.
 - Nunca interceptar ou alterar requests, injetar frames, chamar `WebSocket.send` ou automatizar cliques.
 - Nunca vender, mover, comprar ou usar itens, nem controlar personagem, party, bosses ou hunts.

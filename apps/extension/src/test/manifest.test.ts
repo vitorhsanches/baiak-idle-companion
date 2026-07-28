@@ -14,6 +14,13 @@ describe('manifest security', () => {
     expect(manifest.manifest_version).toBe(3);
     expect(manifest.background?.service_worker).toBe('background.js');
     expect(manifest.side_panel?.default_path).toBe('index.html');
-    expect(JSON.stringify(manifest)).not.toMatch(/https?:\/\//);
+    expect(manifest.content_scripts).toEqual([{
+      matches: ['https://baiakidle.com/jogar/*'],
+      js: ['content.js'],
+      run_at: 'document_idle'
+    }]);
+    expect(JSON.stringify(manifest)).not.toContain('https://*/*');
+    expect(JSON.stringify(manifest)).not.toContain('"world"');
+    expect(JSON.stringify(manifest)).not.toMatch(/https?:\/\/[^"]+\.js/);
   });
 });

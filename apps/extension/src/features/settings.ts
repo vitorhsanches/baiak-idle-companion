@@ -3,15 +3,17 @@ export interface Settings {
   showCompatibility: boolean;
   showCombatBreakdown: boolean;
   notifications: boolean;
+  liveDomEnabled: boolean;
   theme: Theme;
 }
 interface StoredSettings extends Settings {
   version: 1;
 }
 export const defaultSettings: Settings = {
-  showCompatibility: true, showCombatBreakdown: true, notifications: false, theme: 'dark'
+  showCompatibility: true, showCombatBreakdown: true, notifications: false, liveDomEnabled: false, theme: 'dark'
 };
 const key = 'companion.settings';
+let memoryFallback: StoredSettings | undefined;
 const isTheme = (value: unknown): value is Theme =>
   value === 'dark' || value === 'light' || value === 'system';
 const sanitizeSettings = (value: unknown): Settings => {
@@ -21,6 +23,7 @@ const sanitizeSettings = (value: unknown): Settings => {
     showCompatibility: typeof candidate.showCompatibility === 'boolean' ? candidate.showCompatibility : defaultSettings.showCompatibility,
     showCombatBreakdown: typeof candidate.showCombatBreakdown === 'boolean' ? candidate.showCombatBreakdown : defaultSettings.showCombatBreakdown,
     notifications: typeof candidate.notifications === 'boolean' ? candidate.notifications : defaultSettings.notifications,
+    liveDomEnabled: candidate.liveDomEnabled === true,
     theme: isTheme(candidate.theme) ? candidate.theme : defaultSettings.theme
   };
 };
@@ -35,13 +38,12 @@ export const settingsStore = {
       const result = await chrome.storage.local.get(key);
       return deserializeSettings(result[key]);
     }
-    const value = localStorage.getItem(key);
-    return deserializeSettings(value);
+    return deserializeSettings(memoryFallback);
   },
   async save(settings: Settings): Promise<void> {
     const serialized = serializeSettings(settings);
     if (globalThis.chrome?.storage?.local) await chrome.storage.local.set({ [key]: serialized });
-    else localStorage.setItem(key, JSON.stringify(serialized));
+    else memoryFallback = serialized;
   },
   async reset(): Promise<Settings> {
     await this.save(defaultSettings);
@@ -49,6 +51,5 @@ export const settingsStore = {
   },
   async clearDemoData(): Promise<void> {
     if (globalThis.chrome?.storage?.local) await chrome.storage.local.remove('companion.demo');
-    else localStorage.removeItem('companion.demo');
   }
 };

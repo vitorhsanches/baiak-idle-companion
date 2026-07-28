@@ -10,11 +10,41 @@ import { defaultSettings, settingsStore, type Settings, type Theme } from '../fe
 import { parseLocalCatalog } from '../features/catalogs';
 import { classifyItem, defaultProfile, localDataStore, type LocalData } from '../features/localData';
 import { recommendHunts } from '@companion/optimizer-core';
+import { createMessage, defaultLiveState, isLiveMessage, type LiveIntegrationState } from '../integration/protocol';
 
 const pages = ['Overview', 'Hunts', 'Inventory', 'Combat', 'Settings'] as const;
 type Page = (typeof pages)[number];
 const icons: Record<Page, string> = { Overview: '◈', Hunts: '⌖', Inventory: '▦', Combat: '⚔', Settings: '⚙' };
 const provider = new MockGameDataProvider(mockSnapshot);
+
+function LiveDomPanel({ live, settings, onSettings, onLive }: { live: LiveIntegrationState; settings: Settings; onSettings: (value: Settings) => void; onLive: (value: LiveIntegrationState) => void }) {
+  const toggle = async (enabled: boolean) => {
+    if (enabled && !window.confirm('Habilitar leitura local e somente leitura de nome, vocação, level, hunt, equipamentos, imbuements, talentos e inventário apenas quando visível? Cookies, tokens, storage do jogo, rede, chat e ações nunca são acessados.')) return;
+    const next = { ...settings, liveDomEnabled: enabled };
+    const state = await chrome.runtime.sendMessage(createMessage('integration-set', 'side-panel', { enabled })) as LiveIntegrationState | undefined;
+    onSettings(next);
+    await settingsStore.save(next);
+    if (state) onLive(state);
+  };
+  const clear = async () => {
+    if (!window.confirm('Apagar snapshots reais e diagnóstico local?')) return;
+    const state = await chrome.runtime.sendMessage(createMessage('data-clear-request', 'side-panel', {})) as LiveIntegrationState | undefined;
+    if (state) onLive(state);
+  };
+  const exportDiagnostics = () => {
+    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), selectorVersion: live.lastSnapshot?.selectorVersion, diagnostics: live.diagnostics }, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'baiak-idle-selector-diagnostics.json'; link.click(); URL.revokeObjectURL(link.href);
+  };
+  return <section className="card">
+    <small>LIVE DOM READ-ONLY</small><h3>Integração: {live.status}</h3>
+    <label>Enable live read-only game data<input aria-label="Enable live read-only game data" type="checkbox" checked={settings.liveDomEnabled} onChange={(event) => void toggle(event.target.checked)} /></label>
+    <p>Lê somente dados visíveis em https://baiakidle.com/jogar/. Nunca acessa cookies, tokens, storage do jogo, rede, chat ou executa ações.</p>
+    {live.lastSnapshot && <div><strong>{live.lastSnapshot.character.name ?? 'Nome indisponível'} · Level {live.lastSnapshot.character.level ?? 'indisponível'}</strong><p>Origem: Live DOM · confiança {live.lastSnapshot.confidence} · seletores v{live.lastSnapshot.selectorVersion} · {new Date(live.lastSnapshot.timestamp).toLocaleString()}</p>{live.lastSnapshot.missingFields.length > 0 && <p>Campos indisponíveis: {live.lastSnapshot.missingFields.join(', ')}</p>}</div>}
+    <button onClick={() => void chrome.runtime.sendMessage(createMessage('snapshot-refresh-request', 'side-panel', {}))}>Atualizar leitura</button>
+    <button onClick={exportDiagnostics}>Exportar diagnóstico</button>
+    <button className="secondary" onClick={() => void clear()}>Limpar dados reais</button>
+  </section>;
+}
 
 function Overview({ data }: { data: GameSnapshot }) {
   const { character, hunts } = data;
@@ -59,8 +89,16 @@ export function App() {
   const [settings, setSettings] = useState(defaultSettings);
   const [error, setError] = useState('');
   const [local, setLocal] = useState<LocalData>();
+  const [live, setLive] = useState<LiveIntegrationState>(defaultLiveState);
   useEffect(() => { Promise.all([provider.readSnapshot(), settingsStore.load(), localDataStore.load()]).then(([result, stored, storedLocal]) => { if (!result.value) throw new Error(result.errors[0] ?? 'Dados indisponíveis'); setData(result.value); setSettings(stored); setLocal(storedLocal); }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Erro desconhecido')); }, []);
   useEffect(() => { document.documentElement.dataset.theme = settings.theme; }, [settings.theme]);
+  useEffect(() => {
+    if (!globalThis.chrome?.runtime) return;
+    void chrome.runtime.sendMessage(createMessage('state-request', 'side-panel', {})).then((state: LiveIntegrationState | undefined) => { if (state) setLive(state); });
+    const listener = (message: unknown) => { if (isLiveMessage(message) && message.type === 'integration-state' && message.origin === 'background') setLive(message.payload); };
+    chrome.runtime.onMessage.addListener(listener);
+    return () => chrome.runtime.onMessage.removeListener(listener);
+  }, []);
   let content = <LoadingState />;
   if (error) content = <ErrorState message={error} />;
   else if (data && local) {
@@ -70,5 +108,5 @@ export function App() {
     if (page === 'Combat') content = <Combat data={data} showBreakdown={settings.showCombatBreakdown} />;
     if (page === 'Settings') content = <SettingsPage settings={settings} onChange={setSettings} local={local} onLocalChange={setLocal} />;
   }
-  return <div className="app"><aside><div className="brand"><b>B</b><span>Baiak<br /><strong>Companion</strong></span></div><span className="demo">● Demo mode</span><nav>{pages.map((item) => <button aria-current={page === item ? 'page' : undefined} key={item} onClick={() => setPage(item)}><i>{icons[item]}</i>{item}</button>)}</nav><footer>READ-ONLY · v0.1</footer></aside><main>{content}</main></div>;
+  return <div className="app"><aside><div className="brand"><b>B</b><span>Baiak<br /><strong>Companion</strong></span></div><span className="demo">● Demo mode</span><nav>{pages.map((item) => <button aria-current={page === item ? 'page' : undefined} key={item} onClick={() => setPage(item)}><i>{icons[item]}</i>{item}</button>)}</nav><footer>READ-ONLY · v0.1</footer></aside><main>{page === 'Overview' || page === 'Settings' ? <LiveDomPanel live={live} settings={settings} onSettings={setSettings} onLive={setLive} /> : null}{content}</main></div>;
 }
