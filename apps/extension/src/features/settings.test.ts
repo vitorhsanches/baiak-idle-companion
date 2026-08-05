@@ -8,6 +8,14 @@ describe('settings storage', () => {
   it('keeps live DOM disabled by default', () => {
     expect(defaultSettings.liveDomEnabled).toBe(false);
   });
+  it('keeps automatic sale disabled with threshold 30 by default', () => {
+    expect(defaultSettings.autoSellEnabled).toBe(false);
+    expect(defaultSettings.autoSellThreshold).toBe(30);
+  });
+  it('persists automatic sale settings', async () => {
+    await settingsStore.save({ ...defaultSettings, autoSellEnabled: true, autoSellThreshold: 42 });
+    expect(await settingsStore.load()).toMatchObject({ autoSellEnabled: true, autoSellThreshold: 42 });
+  });
   it('clears demo data without changing settings', async () => {
     await settingsStore.save(defaultSettings);
     await settingsStore.clearDemoData();

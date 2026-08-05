@@ -18,6 +18,20 @@ export type IntegrationStatus =
   | 'permission-unavailable'
   | 'error';
 
+export type AutoSellButtonState = 'ready' | 'cooldown' | 'unavailable';
+export interface AutoSellStatus {
+  controllerInitialized: boolean;
+  observerRunning: boolean;
+  enabled: boolean;
+  inventoryCount: number | null;
+  threshold: number;
+  sellButtonFound: boolean;
+  sellButtonReady: boolean;
+  lastBlockReason: string;
+  lastEvaluationAt?: string;
+  lastClickAt?: string;
+}
+
 export interface SelectorDiagnostic {
   logicalName: string;
   selectorVersion: number;
@@ -47,6 +61,7 @@ type ContentPayloads = {
   'snapshot-update': { snapshot: LiveSnapshot };
   'adapter-error': { code: string; message: string };
   'selector-diagnostics': { diagnostics: SelectorDiagnostic[] };
+  'auto-sell-status': AutoSellStatus;
 };
 type PanelPayloads = {
   'integration-set': { enabled: boolean };
@@ -56,6 +71,7 @@ type PanelPayloads = {
 };
 type BackgroundPayloads = {
   'integration-state': LiveIntegrationState;
+  'auto-sell-state': AutoSellStatus;
 };
 type Payloads = ContentPayloads & PanelPayloads & BackgroundPayloads;
 export type MessageType = keyof Payloads;
@@ -90,6 +106,7 @@ export const defaultLiveState = (): LiveIntegrationState => ({
 const allowedKeys = new Set(['protocolVersion', 'type', 'timestamp', 'origin', 'payload']);
 const types = new Set<MessageType>([
   'content-status', 'snapshot-update', 'adapter-error', 'selector-diagnostics',
+  'auto-sell-status', 'auto-sell-state',
   'integration-set', 'data-clear-request', 'snapshot-refresh-request', 'state-request',
   'integration-state'
 ]);

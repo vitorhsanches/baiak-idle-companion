@@ -22,13 +22,18 @@ const contentSenderIsExpected = (sender: chrome.runtime.MessageSender): boolean 
 const handle = async (message: LiveMessage, sender: chrome.runtime.MessageSender): Promise<LiveIntegrationState | undefined> => {
   const stored = await liveStore.load();
   let state = stored.state;
-  const isContent = ['content-status', 'snapshot-update', 'adapter-error', 'selector-diagnostics'].includes(message.type);
-  if (isContent && (message.origin !== 'content-script' || !contentSenderIsExpected(sender) || !state.enabled)) return undefined;
+  const isAutoSell = message.type === 'auto-sell-status';
+  const isContent = ['content-status', 'snapshot-update', 'adapter-error', 'selector-diagnostics', 'auto-sell-status'].includes(message.type);
+  if (isContent && (message.origin !== 'content-script' || !contentSenderIsExpected(sender) || (!isAutoSell && !state.enabled))) return undefined;
   if (isContent) gameTabId = sender.tab?.id;
   if (!isContent && message.origin !== 'side-panel') return undefined;
   if (Date.parse(message.timestamp) < Date.parse(state.updatedAt) - 5_000) return state;
 
   if (message.type === 'state-request') return state;
+  if (message.type === 'auto-sell-status') {
+    try { await chrome.runtime.sendMessage(createMessage('auto-sell-state', 'background', message.payload)); } catch { /* side panel closed */ }
+    return state;
+  }
   if (message.type === 'integration-set') {
     state = { ...state, enabled: message.payload.enabled, status: message.payload.enabled ? 'waiting-for-game-tab' : 'disabled', updatedAt: message.timestamp };
   } else if (message.type === 'data-clear-request') {

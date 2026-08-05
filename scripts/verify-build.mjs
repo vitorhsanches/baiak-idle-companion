@@ -1,6 +1,7 @@
 /* global process */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
+import { contentScriptViolations } from './verify-content.mjs';
 const outputDirectory = resolve('dist/extension');
 const fail = (message) => { throw new Error(`Build verification failed: ${message}`); };
 const read = (file) => readFileSync(file, 'utf8');
@@ -20,13 +21,17 @@ const contentScript = manifest.content_scripts[0];
 if (JSON.stringify(contentScript.matches) !== JSON.stringify(['https://baiakidle.com/jogar', 'https://baiakidle.com/jogar/*'])) fail('content script route is not minimal');
 if (contentScript.run_at !== 'document_idle' || 'world' in contentScript) fail('content script must use the default isolated world at document_idle');
 for (const entry of [manifest.background?.service_worker, manifest.side_panel?.default_path, ...contentScript.js]) if (typeof entry !== 'string' || !existsSync(resolve(outputDirectory, entry))) fail(`missing manifest entry: ${entry}`);
+const builtContentScript = read(resolve(outputDirectory, 'content.js'));
+const contentViolations = contentScriptViolations(builtContentScript);
+if (contentViolations.length) fail(`content.js is not self-contained: ${contentViolations.join(', ')}`);
+process.stdout.write('Content script self-contained: passed\n');
 const files = listFiles(outputDirectory);
 for (const file of files) {
   const name = relative(outputDirectory, file);
   if (name.endsWith('.map')) fail(`source map emitted: ${name}`);
   if (/\.(?:js|html)$/i.test(name)) {
     const content = read(file);
-    for (const forbidden of ['document.cookie', 'localStorage', 'sessionStorage', 'XMLHttpRequest', 'WebSocket', 'chrome.cookies', 'chrome.webRequest', 'chrome.debugger', 'world: MAIN', 'eval(', 'new Function']) if (content.includes(forbidden)) fail(`forbidden runtime pattern ${forbidden} in ${name}`);
+    for (const forbidden of ['document.cookie', 'localStorage', 'sessionStorage', 'XMLHttpRequest', 'WebSocket', 'fetch(', 'chrome.cookies', 'chrome.webRequest', 'chrome.debugger', 'world: MAIN', 'eval(', 'new Function']) if (content.includes(forbidden)) fail(`forbidden runtime pattern ${forbidden} in ${name}`);
     if (/\b(?:importScripts|import)\s*\(\s*['"]https?:\/\//.test(content)) fail(`remote script import in ${name}`);
     if (/<(?:script|link)\b[^>]+(?:src|href)=['"]https?:\/\//i.test(content)) fail(`remote HTML asset in ${name}`);
   }
@@ -34,6 +39,6 @@ for (const file of files) {
 for (const directory of ['apps/extension/src', 'packages/game-adapter/src']) for (const file of listFiles(resolve(directory))) {
   if (!/\.(?:ts|tsx)$/.test(file) || /\.test\.(?:ts|tsx)$/.test(file)) continue;
   const content = read(file);
-  for (const forbidden of ['document.cookie', 'localStorage', 'sessionStorage', 'XMLHttpRequest', 'WebSocket', 'chrome.cookies', 'chrome.webRequest', 'chrome.debugger', 'world: MAIN', 'eval(', 'new Function']) if (content.includes(forbidden)) fail(`forbidden source pattern ${forbidden} in ${relative('.', file)}`);
+  for (const forbidden of ['document.cookie', 'localStorage', 'sessionStorage', 'XMLHttpRequest', 'WebSocket', 'fetch(', 'chrome.cookies', 'chrome.webRequest', 'chrome.debugger', 'world: MAIN', 'eval(', 'new Function']) if (content.includes(forbidden)) fail(`forbidden source pattern ${forbidden} in ${relative('.', file)}`);
 }
 process.stdout.write(`Build verified: ${files.length} files, Manifest V3, local-only runtime.\n`);

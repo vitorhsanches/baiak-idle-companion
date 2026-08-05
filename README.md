@@ -1,8 +1,8 @@
 # Baiak Idle Companion
 
-Inclui integração experimental Live DOM, local, read-only e desativada por padrão, restrita a `https://baiakidle.com/jogar/*`. Ela nunca executa ações; a compatibilidade autenticada está **não comprovada em ambiente real**. Consulte `docs/live-dom-integration.md`.
+Inclui integração experimental Live DOM e venda automática opt-in, ambas locais e desativadas por padrão, restritas a `https://baiakidle.com/jogar/*`. A venda automática é a única exceção ao modo read-only: quando explicitamente ativada, pode chamar `click()` somente no botão visível `#sell-all`. A compatibilidade autenticada e as regras do jogo ainda precisam de validação manual.
 
-Extensão Chrome assistiva e **read-only** para explorar análises locais de personagem, hunts, inventário e combate. O modo demo continua padrão; a leitura real opcional limita-se ao DOM visível, não coleta credenciais e não executa ações.
+Extensão Chrome assistiva para análises locais. O modo demo continua padrão; a integração não coleta credenciais nem usa APIs internas, rede ou storage do jogo. A única ação suportada é a venda automática opt-in descrita acima.
 
 O MVP inclui contratos para leitura DOM passiva opt-in, importação manual de catálogos JSON versão 1 com checksum e cálculos locais. Nenhum dado é enviado a servidores externos.
 
@@ -30,7 +30,7 @@ npm run build
 5. Selecione `dist/extension`.
 6. Fixe a extensão e clique no ícone para abrir o painel lateral.
 
-Todos os números exibidos são dados simulados. O projeto não envia dados a servidores externos.
+Os números do modo demo são simulados. O projeto não envia dados a servidores externos. Não habilite a venda automática antes de confirmar as regras do jogo e concluir o teste manual.
 
 ## Workspaces
 

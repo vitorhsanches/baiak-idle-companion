@@ -2,6 +2,8 @@
 
 - [x] Fundação opt-in para leitura Live DOM restrita e local.
 - [ ] Validar seletores no Chrome autenticado; **não comprovado em ambiente real**.
+- [x] Implementar venda automática opt-in isolada, com guard, debounce, status e testes sintéticos.
+- [ ] Confirmar as regras do jogo e executar teste manual no Chrome antes de commit/release.
 
 ## Fase 1 — Fundação e mock
 
@@ -23,4 +25,4 @@ Métricas locais, sessões, tendências e divisão de dano a partir de fontes re
 
 ## Fase 5 — Ações assistidas
 
-Somente após validação explícita das regras do jogo, threat model atualizado e autorização em tarefa futura. Preferir instruções confirmadas pelo usuário; automação de gameplay não está pré-aprovada.
+A tarefa de implementação autorizou a exceção estreita de venda automática e o threat model foi atualizado. A funcionalidade permanece desativada por padrão e bloqueada para release até validação das regras do jogo e teste manual. Nenhuma outra automação de gameplay está aprovada.

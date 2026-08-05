@@ -10,7 +10,7 @@ import { defaultSettings, settingsStore, type Settings, type Theme } from '../fe
 import { parseLocalCatalog } from '../features/catalogs';
 import { classifyItem, defaultProfile, localDataStore, type LocalData } from '../features/localData';
 import { recommendHunts } from '@companion/optimizer-core';
-import { createMessage, defaultLiveState, isLiveMessage, type LiveIntegrationState } from '../integration/protocol';
+import { createMessage, defaultLiveState, isLiveMessage, type AutoSellStatus, type LiveIntegrationState } from '../integration/protocol';
 
 const pages = ['Overview', 'Hunts', 'Inventory', 'Combat', 'Settings'] as const;
 type Page = (typeof pages)[number];
@@ -38,7 +38,7 @@ function LiveDomPanel({ live, settings, onSettings, onLive }: { live: LiveIntegr
   return <section className="card">
     <small>LIVE DOM READ-ONLY</small><h3>Integração: {live.status}</h3>
     <label>Enable live read-only game data<input aria-label="Enable live read-only game data" type="checkbox" checked={settings.liveDomEnabled} onChange={(event) => void toggle(event.target.checked)} /></label>
-    <p>Lê somente dados visíveis em https://baiakidle.com/jogar/. Nunca acessa cookies, tokens, storage do jogo, rede, chat ou executa ações.</p>
+    <p>Lê somente dados visíveis em https://baiakidle.com/jogar/. Nunca acessa cookies, tokens, storage do jogo, rede ou chat. A venda automática é uma opção separada e desativada por padrão.</p>
     {live.lastSnapshot && <div><strong>{live.lastSnapshot.character.name ?? 'Nome indisponível'} · Level {live.lastSnapshot.character.level ?? 'indisponível'}</strong><p>Origem: Live DOM · confiança {live.lastSnapshot.confidence} · seletores v{live.lastSnapshot.selectorVersion} · {new Date(live.lastSnapshot.timestamp).toLocaleString()}</p>{live.lastSnapshot.missingFields.length > 0 && <p>Campos indisponíveis: {live.lastSnapshot.missingFields.join(', ')}</p>}</div>}
     <button onClick={() => void chrome.runtime.sendMessage(createMessage('snapshot-refresh-request', 'side-panel', {}))}>Atualizar leitura</button>
     <button onClick={exportDiagnostics}>Exportar diagnóstico</button>
@@ -61,8 +61,8 @@ function Hunts({ data, showCompatibility, local }: { data: GameSnapshot; showCom
   return <><header><small>{source.toUpperCase()}</small><h2>Hunts recomendadas</h2><p>Valores são estimativas; teto teórico não é resultado medido.</p></header>{hunts.map((hunt) => { const recommendation = recommendations.find((item) => item.huntId === hunt.id); return <section className="card hunt" key={hunt.id}><div><h3>{hunt.name}</h3><small>Level mínimo {hunt.minimumLevel} · Resistência {hunt.relevantResistance} · {recommendation?.kind ?? 'unavailable'}</small></div>{showCompatibility && <strong className="score">{hunt.compatibility}%</strong>}<div className="metrics"><Metric label="XP/h estimada" value={formatNumber(recommendation?.value ?? 0)} /><Metric label="Gold/h catálogo" value={formatNumber(hunt.estimatedGoldHour)} /></div><p>Confiança: {recommendation?.confidence ?? 'none'} · {recommendation?.explanation}</p></section>; })}</>;
 }
 const labels = { protect: 'Proteger', protected: 'Protegido', review: 'Revisar', sellable: 'Candidato a venda', 'sell-candidate': 'Candidato a venda', supply: 'Supply', unknown: 'Desconhecido' };
-function Inventory({ data, local }: { data: GameSnapshot; local: LocalData }) {
-  return <><header><small>DEMO · REGRAS LOCAIS</small><h2>Inventário</h2><p>Somente leitura — nenhuma ação de venda disponível.</p></header><section className="card">{data.inventory.map((item) => { const result = classifyItem(item, local.inventoryRules, local.overrides); return <div className="row item" key={item.id}><div><strong>{item.name}</strong><small>{item.rarity} · {result.reason}</small></div><span className={`tag ${result.classification}`}>{labels[result.classification]}</span></div>; })}</section></>;
+function Inventory({ data, local, autoSell }: { data: GameSnapshot; local: LocalData; autoSell?: AutoSellStatus }) {
+  return <><header><small>DEMO · REGRAS LOCAIS</small><h2>Inventário</h2><p>A classificação é somente leitura; a venda automática opt-in é configurada em Settings.</p></header>{autoSell && <section className="card"><small>AUTO-VENDA {autoSell.enabled ? 'ATIVA' : 'DESATIVADA'}</small><h3>{autoSell.inventoryCount ?? '—'} / limite {autoSell.threshold}</h3><p>Controlador: {autoSell.controllerInitialized ? 'inicializado' : 'pendente'} · Observer: {autoSell.observerRunning ? 'ativo' : 'parado'}</p><p>Botão: {autoSell.sellButtonFound ? (autoSell.sellButtonReady ? 'ready' : 'cooldown') : 'unavailable'} · Motivo: {autoSell.lastBlockReason}</p><p>Última avaliação: {autoSell.lastEvaluationAt ? new Date(autoSell.lastEvaluationAt).toLocaleString() : 'nenhuma'} · Último clique: {autoSell.lastClickAt ? new Date(autoSell.lastClickAt).toLocaleString() : 'nenhum'}</p></section>}<section className="card">{data.inventory.map((item) => { const result = classifyItem(item, local.inventoryRules, local.overrides); return <div className="row item" key={item.id}><div><strong>{item.name}</strong><small>{item.rarity} · {result.reason}</small></div><span className={`tag ${result.classification}`}>{labels[result.classification]}</span></div>; })}</section></>;
 }
 function Combat({ data, showBreakdown }: { data: GameSnapshot; showBreakdown: boolean }) {
   const c = data.combat;
@@ -74,11 +74,19 @@ function SettingsPage({ settings, onChange, local, onLocalChange }: { settings: 
   const importCatalog = async (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (!file) return; try { const catalog = await parseLocalCatalog(file); saveLocal({ ...local, catalog, catalogHistory: [catalog, ...local.catalogHistory].slice(0, 10) }); } catch (reason) { window.alert(reason instanceof Error ? reason.message : 'Falha ao importar catálogo.'); } finally { event.target.value = ''; } };
   const exportData = async () => { const blob = new Blob([await localDataStore.export()], { type: 'application/json' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'baiak-idle-companion-backup.json'; link.click(); URL.revokeObjectURL(link.href); };
   const importBackup = async (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (!file) return; try { if (!window.confirm('Substituir dados locais pelo backup selecionado?')) return; onLocalChange(await localDataStore.import(await file.text())); } catch (reason) { window.alert(reason instanceof Error ? reason.message : 'Backup inválido.'); } finally { event.target.value = ''; } };
+  const toggleAutoSell = (enabled: boolean) => {
+    if (enabled && !window.confirm('Enable automatic loot sale? When enabled, the extension clicks Sell whenever the visible inventory count exceeds the threshold and cooldown is available.')) return;
+    update({ autoSellEnabled: enabled });
+  };
   return <><header><small>PREFERÊNCIAS LOCAIS</small><h2>Settings</h2><p>Dados permanecem somente neste dispositivo.</p></header><section className="card settings">
     <label>Mostrar compatibilidade<input type="checkbox" checked={settings.showCompatibility} onChange={(e) => update({ showCompatibility: e.target.checked })} /></label>
     <label>Detalhes de combate<input type="checkbox" checked={settings.showCombatBreakdown} onChange={(e) => update({ showCombatBreakdown: e.target.checked })} /></label>
     <label>Notificações<input type="checkbox" checked={settings.notifications} onChange={(e) => update({ notifications: e.target.checked })} /></label>
     <label>Tema<select aria-label="Tema" value={settings.theme} onChange={(e) => update({ theme: e.target.value as Theme })}><option value="dark">Escuro</option><option value="light">Claro</option><option value="system">Sistema</option></select></label>
+    <label>Enable automatic loot sale<input aria-label="Enable automatic loot sale" type="checkbox" checked={settings.autoSellEnabled} onChange={(event) => toggleAutoSell(event.target.checked)} /></label>
+    <label>Threshold<input aria-label="Auto-sell threshold" type="number" min="0" step="1" value={settings.autoSellThreshold} onChange={(event) => update({ autoSellThreshold: Math.max(0, Math.floor(Number(event.target.value) || 0)) })} /></label>
+    <p className="warning">When enabled, the extension will click Sell whenever the inventory count is above the configured threshold and the sale cooldown is available.</p>
+    <button className="danger" disabled={!settings.autoSellEnabled} onClick={() => update({ autoSellEnabled: false })}>Disable automatic sale now</button>
     <button onClick={() => void settingsStore.clearDemoData()}>Limpar dados simulados</button>
     <button className="secondary" onClick={() => { void settingsStore.reset(); onChange(defaultSettings); }}>Restaurar padrões</button>
   </section><section className="card settings"><h3>Perfil de dano manual</h3><p>Origem: {local.damageOrigin}. Soma: {Math.round(Object.values(local.damageProfile.elements).reduce((sum, value) => sum + (value ?? 0), 0) * 100)}%</p><label>Physical %<input aria-label="Physical %" type="number" min="0" max="100" value={(local.damageProfile.elements.physical ?? 0) * 100} onChange={(event) => saveLocal({ ...local, damageOrigin: 'manual', damageProfile: { elements: { ...local.damageProfile.elements, physical: Number(event.target.value) / 100 } } })} /></label><button className="secondary" onClick={() => saveLocal({ ...local, damageProfile: defaultProfile, damageOrigin: 'demo' })}>Restaurar perfil demo</button></section><section className="card settings"><h3>Catálogo local</h3><p>{local.catalog ? `${local.catalog.fileName ?? 'Arquivo local'} · v${local.catalog.catalog.version} · ${local.catalog.checksum.slice(0, 12)}…` : 'Nenhum catálogo importado.'}</p><label>Importar JSON<input aria-label="Importar catálogo" type="file" accept="application/json,.json" onChange={(event) => void importCatalog(event)} /></label>{local.catalog && <button onClick={() => { if (window.confirm('Remover o catálogo ativo?')) saveLocal({ ...local, catalog: undefined }); }}>Remover catálogo</button>}</section><section className="card settings"><h3>Dados locais</h3><p>Side panel: enabled · Local storage: enabled · DOM game integration: not enabled · Automated actions: not supported</p><button onClick={() => void exportData()}>Exportar dados locais</button><label>Importar backup<input aria-label="Importar backup" type="file" accept="application/json,.json" onChange={(event) => void importBackup(event)} /></label><button className="secondary" onClick={() => { if (window.confirm('Limpar todos os dados locais?')) { void localDataStore.clear(); onLocalChange({ ...local, catalog: undefined, catalogHistory: [], inventoryRules: [], overrides: {}, snapshots: [], recommendations: [] }); } }}>Limpar dados locais</button></section></>;
@@ -90,12 +98,17 @@ export function App() {
   const [error, setError] = useState('');
   const [local, setLocal] = useState<LocalData>();
   const [live, setLive] = useState<LiveIntegrationState>(defaultLiveState);
+  const [autoSell, setAutoSell] = useState<AutoSellStatus>();
   useEffect(() => { Promise.all([provider.readSnapshot(), settingsStore.load(), localDataStore.load()]).then(([result, stored, storedLocal]) => { if (!result.value) throw new Error(result.errors[0] ?? 'Dados indisponíveis'); setData(result.value); setSettings(stored); setLocal(storedLocal); }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Erro desconhecido')); }, []);
   useEffect(() => { document.documentElement.dataset.theme = settings.theme; }, [settings.theme]);
   useEffect(() => {
     if (!globalThis.chrome?.runtime) return;
     void chrome.runtime.sendMessage(createMessage('state-request', 'side-panel', {})).then((state: LiveIntegrationState | undefined) => { if (state) setLive(state); });
-    const listener = (message: unknown) => { if (isLiveMessage(message) && message.type === 'integration-state' && message.origin === 'background') setLive(message.payload); };
+    const listener = (message: unknown) => {
+      if (!isLiveMessage(message) || message.origin !== 'background') return;
+      if (message.type === 'integration-state') setLive(message.payload);
+      if (message.type === 'auto-sell-state') setAutoSell(message.payload);
+    };
     chrome.runtime.onMessage.addListener(listener);
     return () => chrome.runtime.onMessage.removeListener(listener);
   }, []);
@@ -104,9 +117,9 @@ export function App() {
   else if (data && local) {
     if (page === 'Overview') content = <Overview data={data} />;
     if (page === 'Hunts') content = <Hunts data={data} showCompatibility={settings.showCompatibility} local={local} />;
-    if (page === 'Inventory') content = <Inventory data={data} local={local} />;
+    if (page === 'Inventory') content = <Inventory data={data} local={local} autoSell={autoSell} />;
     if (page === 'Combat') content = <Combat data={data} showBreakdown={settings.showCombatBreakdown} />;
     if (page === 'Settings') content = <SettingsPage settings={settings} onChange={setSettings} local={local} onLocalChange={setLocal} />;
   }
-  return <div className="app"><aside><div className="brand"><b>B</b><span>Baiak<br /><strong>Companion</strong></span></div><span className="demo">● Demo mode</span><nav>{pages.map((item) => <button aria-current={page === item ? 'page' : undefined} key={item} onClick={() => setPage(item)}><i>{icons[item]}</i>{item}</button>)}</nav><footer>READ-ONLY · v0.1</footer></aside><main>{page === 'Overview' || page === 'Settings' ? <LiveDomPanel live={live} settings={settings} onSettings={setSettings} onLive={setLive} /> : null}{content}</main></div>;
+  return <div className="app"><aside><div className="brand"><b>B</b><span>Baiak<br /><strong>Companion</strong></span></div><span className="demo">● Demo mode</span><nav>{pages.map((item) => <button aria-current={page === item ? 'page' : undefined} key={item} onClick={() => setPage(item)}><i>{icons[item]}</i>{item}</button>)}</nav><footer>LOCAL · OPT-IN · v0.1</footer></aside><main>{page === 'Overview' || page === 'Settings' ? <LiveDomPanel live={live} settings={settings} onSettings={setSettings} onLive={setLive} /> : null}{content}</main></div>;
 }

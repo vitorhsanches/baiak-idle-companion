@@ -4,7 +4,7 @@ O manifest mantém apenas `sidePanel` e `storage`; o único content script usa `
 
 ## Princípio
 
-A extensão é assistiva, local e read-only. O MVP usa mocks e não acessa páginas do jogo.
+A extensão é assistiva e local. Leitura e análises permanecem read-only; a única exceção é a venda automática, desativada por padrão e habilitada somente após consentimento explícito.
 
 ## Threat model
 
@@ -19,11 +19,13 @@ Nunca coletar, ler, copiar, registrar ou expor tokens, cookies de autenticação
 - `sidePanel`: hospeda a interface solicitada.
 - `storage`: persiste preferências e catálogos locais validados, sem segredos.
 
-Não existem `host_permissions`, permissões de cookies, scripting, tabs, webRequest ou `<all_urls>`. Nenhuma permissão de host foi adicionada porque o domínio real não foi validado neste ambiente; um provider conectado exigirá revisão independente e host exato.
+Não existem `host_permissions`, permissões de cookies, scripting, tabs, webRequest ou `<all_urls>`. O content script já é limitado no manifest às rotas exatas do jogo; a automação não requer nova permissão.
 
 ## Scripts de página
 
-Código executado no contexto da página pode sofrer adulteração, expor dados e criar capacidade de mutação. Uma futura leitura DOM deve usar content script isolado, seletores centralizados, mensagens tipadas e allowlist de campos. É proibido sobrescrever WebSocket, usar `WebSocket.send`, interceptar requests, disparar eventos ou cliques.
+O content script usa isolated world. É proibido sobrescrever WebSocket, usar `WebSocket.send`, interceptar requests ou disparar outros eventos. A exceção estreita é `HTMLButtonElement.click()` em `#sell-all`, somente quando o toggle está ligado, a contagem visível excede o limite, o botão não está disabled nem em `.cd`, não há venda em processamento e o guard de cinco segundos expirou. O texto do botão nunca autoriza o clique.
+
+O guard é persistido localmente para sobreviver a reloads. A transição para disabled/`.cd` é apenas confirmação visual de cooldown, não prova de sucesso da venda. Configurações são globais à extensão; múltiplas abas permanecem uma limitação a validar antes de release.
 
 ## Armazenamento
 

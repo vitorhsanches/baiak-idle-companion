@@ -1,6 +1,6 @@
 # Arquitetura
 
-A integração real segue `content script isolado → protocolo validado → background → side panel`. O adapter é a única camada com seletores; a UI recebe snapshots sanitizados.
+A leitura real segue `content script isolado → protocolo validado → background → side panel`. A automação fica isolada em `apps/extension/src/automation/autoSell.ts`; ela lê apenas `#inv-count` e o estado de `#sell-all`, executa o clique permitido e envia status sanitizado pelo mesmo protocolo.
 
 ## Componentes e dependências
 
@@ -22,8 +22,9 @@ O fluxo atual começa no provider mock, que devolve um clone do snapshot com ori
 - Adapter: única fronteira autorizada para futura leitura do jogo.
 - Optimizer: cálculos determinísticos, sem efeitos colaterais.
 - Extensão: renderização, navegação, preferências e comunicação com providers.
+- Automação: exceção opt-in com efeitos, separada do adapter read-only, do domínio e do optimizer.
 
-Seletores do site devem existir apenas em uma implementação de provider DOM. Não podem aparecer em componentes, hooks, domínio ou optimizer.
+Seletores de leitura pertencem ao provider DOM. Os dois seletores de ação ficam exclusivamente no módulo de automação e não aparecem em componentes, domínio ou optimizer.
 
 ## Decisões técnicas
 

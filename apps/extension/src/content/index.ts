@@ -3,6 +3,10 @@ import {
   createMessage, GAME_ORIGIN, isGamePath, MAX_MESSAGE_BYTES, messageSize,
   type LiveSnapshot, type SelectorDiagnostic
 } from '../integration/protocol';
+import { startAutoSellObserver } from '../automation/autoSell';
+
+const stopAutoSellObserver = startAutoSellObserver();
+window.addEventListener('pagehide', stopAutoSellObserver, { once: true });
 
 const SETTINGS_KEY = 'companion.settings';
 const MIN_READ_INTERVAL_MS = 2_000;
