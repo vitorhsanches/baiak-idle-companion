@@ -17,7 +17,7 @@ if (JSON.stringify(manifest.permissions) !== JSON.stringify(['sidePanel', 'stora
 for (const forbidden of ['host_permissions', 'cookies', 'tabs', 'scripting', 'webRequest', '<all_urls>']) if (JSON.stringify(manifest).includes(forbidden)) fail(`forbidden manifest capability: ${forbidden}`);
 if (manifest.content_scripts?.length !== 1) fail('exactly one content script is required');
 const contentScript = manifest.content_scripts[0];
-if (JSON.stringify(contentScript.matches) !== JSON.stringify(['https://baiakidle.com/jogar/*'])) fail('content script route is not minimal');
+if (JSON.stringify(contentScript.matches) !== JSON.stringify(['https://baiakidle.com/jogar', 'https://baiakidle.com/jogar/*'])) fail('content script route is not minimal');
 if (contentScript.run_at !== 'document_idle' || 'world' in contentScript) fail('content script must use the default isolated world at document_idle');
 for (const entry of [manifest.background?.service_worker, manifest.side_panel?.default_path, ...contentScript.js]) if (typeof entry !== 'string' || !existsSync(resolve(outputDirectory, entry))) fail(`missing manifest entry: ${entry}`);
 const files = listFiles(outputDirectory);

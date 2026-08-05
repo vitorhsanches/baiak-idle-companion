@@ -1,5 +1,5 @@
 import {
-  createMessage, GAME_ORIGIN, GAME_PATH_PREFIX, isLiveMessage, MAX_MESSAGE_BYTES,
+  createMessage, GAME_ORIGIN, isGamePath, isLiveMessage, MAX_MESSAGE_BYTES,
   messageSize, type LiveIntegrationState, type LiveMessage
 } from '../integration/protocol';
 import { liveStore } from '../integration/storage';
@@ -13,7 +13,7 @@ const contentSenderIsExpected = (sender: chrome.runtime.MessageSender): boolean 
   if (!sender.url) return false;
   try {
     const url = new URL(sender.url);
-    return url.origin === GAME_ORIGIN && url.pathname.startsWith(GAME_PATH_PREFIX);
+    return url.origin === GAME_ORIGIN && isGamePath(url.pathname);
   } catch {
     return false;
   }

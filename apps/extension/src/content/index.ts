@@ -1,6 +1,6 @@
 import { DomGameAdapter, gameDomSelectors } from '@companion/game-adapter';
 import {
-  createMessage, GAME_ORIGIN, GAME_PATH_PREFIX, MAX_MESSAGE_BYTES, messageSize,
+  createMessage, GAME_ORIGIN, isGamePath, MAX_MESSAGE_BYTES, messageSize,
   type LiveSnapshot, type SelectorDiagnostic
 } from '../integration/protocol';
 
@@ -43,7 +43,7 @@ const checksum = (value: unknown): string => {
 
 const read = async (): Promise<void> => {
   timer = undefined;
-  if (!enabled || location.origin !== GAME_ORIGIN || !location.pathname.startsWith(GAME_PATH_PREFIX)) return;
+  if (!enabled || location.origin !== GAME_ORIGIN || !isGamePath(location.pathname)) return;
   const elapsed = Date.now() - lastReadAt;
   if (elapsed < MIN_READ_INTERVAL_MS) {
     timer = setTimeout(() => void read(), MIN_READ_INTERVAL_MS - elapsed);
@@ -99,7 +99,7 @@ const stop = (): void => {
 };
 const start = (): void => {
   stop();
-  if (!location.pathname.startsWith(GAME_PATH_PREFIX)) return;
+  if (!isGamePath(location.pathname)) return;
   void send(createMessage('content-status', 'content-script', { status: 'game-page-detected' }));
   observer = new MutationObserver(schedule);
   observer.observe(document.body, { childList: true, subtree: true, attributes: true });

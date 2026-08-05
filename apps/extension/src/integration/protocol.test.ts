@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { createMessage, isLiveMessage, MAX_MESSAGE_BYTES } from './protocol';
+import { createMessage, isGamePath, isLiveMessage, MAX_MESSAGE_BYTES } from './protocol';
 
 describe('live DOM message protocol', () => {
+  it('accepts only the exact game path and its descendants', () => {
+    expect(isGamePath('/jogar')).toBe(true);
+    expect(isGamePath('/jogar/')).toBe(true);
+    expect(isGamePath('/jogar/hunt')).toBe(true);
+    expect(isGamePath('/jogador')).toBe(false);
+  });
   it('accepts a valid versioned message', () => {
     expect(isLiveMessage(createMessage('content-status', 'content-script', { status: 'game-page-detected' }))).toBe(true);
   });

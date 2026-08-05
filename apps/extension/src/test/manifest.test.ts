@@ -15,7 +15,7 @@ describe('manifest security', () => {
     expect(manifest.background?.service_worker).toBe('background.js');
     expect(manifest.side_panel?.default_path).toBe('index.html');
     expect(manifest.content_scripts).toEqual([{
-      matches: ['https://baiakidle.com/jogar/*'],
+      matches: ['https://baiakidle.com/jogar', 'https://baiakidle.com/jogar/*'],
       js: ['content.js'],
       run_at: 'document_idle'
     }]);

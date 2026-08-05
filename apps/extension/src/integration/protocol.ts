@@ -3,6 +3,7 @@ import type { CharacterSnapshot, DataConfidence } from '@companion/domain';
 export const LIVE_PROTOCOL_VERSION = 1;
 export const GAME_ORIGIN = 'https://baiakidle.com';
 export const GAME_PATH_PREFIX = '/jogar/';
+export const isGamePath = (path: string): boolean => path === '/jogar' || path.startsWith(GAME_PATH_PREFIX);
 export const MAX_MESSAGE_BYTES = 64_000;
 export const MAX_STRING_LENGTH = 500;
 
