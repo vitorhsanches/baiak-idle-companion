@@ -6,6 +6,7 @@ export interface Settings {
   liveDomEnabled: boolean;
   autoSellEnabled: boolean;
   autoSellThreshold: number;
+  autoConfirmSale: boolean;
   theme: Theme;
 }
 interface StoredSettings extends Settings {
@@ -13,7 +14,7 @@ interface StoredSettings extends Settings {
 }
 export const defaultSettings: Settings = {
   showCompatibility: true, showCombatBreakdown: true, notifications: false, liveDomEnabled: false,
-  autoSellEnabled: false, autoSellThreshold: 30, theme: 'dark'
+  autoSellEnabled: false, autoSellThreshold: 30, autoConfirmSale: false, theme: 'dark'
 };
 const key = 'companion.settings';
 let memoryFallback: StoredSettings | undefined;
@@ -30,6 +31,7 @@ const sanitizeSettings = (value: unknown): Settings => {
     autoSellEnabled: candidate.autoSellEnabled === true,
     autoSellThreshold: typeof candidate.autoSellThreshold === 'number' && Number.isFinite(candidate.autoSellThreshold)
       ? Math.max(0, Math.floor(candidate.autoSellThreshold)) : defaultSettings.autoSellThreshold,
+    autoConfirmSale: candidate.autoConfirmSale === true,
     theme: isTheme(candidate.theme) ? candidate.theme : defaultSettings.theme
   };
 };

@@ -11,6 +11,11 @@ describe('settings storage', () => {
   it('keeps automatic sale disabled with threshold 30 by default', () => {
     expect(defaultSettings.autoSellEnabled).toBe(false);
     expect(defaultSettings.autoSellThreshold).toBe(30);
+    expect(defaultSettings.autoConfirmSale).toBe(false);
+  });
+  it('persists automatic confirmation settings', async () => {
+    await settingsStore.save({ ...defaultSettings, autoSellEnabled: true, autoConfirmSale: true });
+    expect(await settingsStore.load()).toMatchObject({ autoSellEnabled: true, autoConfirmSale: true });
   });
   it('persists automatic sale settings', async () => {
     await settingsStore.save({ ...defaultSettings, autoSellEnabled: true, autoSellThreshold: 42 });

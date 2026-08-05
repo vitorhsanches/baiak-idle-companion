@@ -1,4 +1,4 @@
-import { EVALUATION_DEBOUNCE_MS, isSellButtonReady, parseInventoryCount, startAutoSellObserver } from './autoSell';
+import { CLICK_GUARD_MS, CONFIRMATION_TIMEOUT_MS, COOLDOWN_TIMEOUT_MS, EVALUATION_DEBOUNCE_MS, isSellButtonReady, parseInventoryCount, startAutoSellObserver } from './autoSell';
 
 const listeners = new Set<(changes: Record<string, chrome.storage.StorageChange>, area: string) => void>();
 let settings: Record<string, unknown>;
@@ -18,6 +18,12 @@ const renderGame = (count = '31 / 32', button = '<button id="sell-all">venda</bu
   document.body.innerHTML = `<b id="inv-count">${count}</b>${button}`;
   return document.querySelector<HTMLButtonElement>('#sell-all');
 };
+const createModal = (title = 'Vender tudo', options: { hidden?: boolean; disabled?: boolean } = {}) => {
+  const card = document.createElement('div'); card.className = 'im-card';
+  card.innerHTML = `<div id="confirm-modal-body"><div class="sell-sum"><div class="sell-sum-head">${title}</div></div></div><div class="confirm-actions"><button id="confirm-yes" ${options.disabled ? 'disabled' : ''}>Vender tudo</button><button id="confirm-no">Cancelar</button></div>`;
+  const confirm = card.querySelector<HTMLButtonElement>('#confirm-yes')!; confirm.hidden = options.hidden ?? false;
+  return { card, confirm };
+};
 const settle = async (): Promise<void> => { await vi.advanceTimersByTimeAsync(EVALUATION_DEBOUNCE_MS); await Promise.resolve(); };
 const changeSettings = (next: Record<string, unknown>): void => {
   const previous = settings; settings = next;
@@ -28,6 +34,7 @@ describe('automatic sale controller', () => {
   beforeEach(() => {
     vi.useFakeTimers(); vi.setSystemTime(new Date('2026-08-04T12:00:00Z')); listeners.clear(); sent.length = 0; guard = undefined;
     settings = { autoSellEnabled: true, autoSellThreshold: 30 }; installChromeMock(); document.body.innerHTML = '';
+    vi.spyOn(HTMLElement.prototype, 'getClientRects').mockReturnValue({ length: 1 } as DOMRectList);
   });
   afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
@@ -96,5 +103,110 @@ describe('automatic sale controller', () => {
   it('cleans up observers, storage listener and timers', async () => {
     const click = vi.spyOn(renderGame()!, 'click'); const stop = startAutoSellObserver(); stop();
     document.querySelector('#inv-count')!.textContent = '32 / 32'; await settle(); expect(click).not.toHaveBeenCalled(); expect(listeners.size).toBe(0);
+  });
+
+  it('does not confirm when autoConfirmSale is false', async () => {
+    settings.autoConfirmSale = false; const sell = renderGame('32 / 32')!; const modal = createModal();
+    const confirm = vi.spyOn(modal.confirm, 'click'); vi.spyOn(sell, 'click').mockImplementation(() => document.body.append(modal.card));
+    const stop = startAutoSellObserver(); await settle(); expect(confirm).not.toHaveBeenCalled();
+    expect(sent.some((message) => (message as { payload?: { confirmationState?: string } }).payload?.confirmationState === 'waiting-for-manual-confirmation')).toBe(true); stop();
+  });
+  it('confirms the correct modal and ends on cooldown', async () => {
+    settings.autoConfirmSale = true; const sell = renderGame('32 / 32')!; const modal = createModal();
+    vi.spyOn(sell, 'click').mockImplementation(() => document.body.append(modal.card));
+    const confirm = vi.spyOn(modal.confirm, 'click').mockImplementation(() => { sell.disabled = true; sell.classList.add('cd'); });
+    const stop = startAutoSellObserver(); await settle(); expect(confirm).toHaveBeenCalledOnce();
+    expect(sent.some((message) => (message as { payload?: { confirmationState?: string } }).payload?.confirmationState === 'sale-confirmed-visually')).toBe(true); stop();
+  });
+  it.each([
+    ['another title', createModal('Excluir item')],
+    ['hidden button', createModal('Vender tudo', { hidden: true })],
+    ['disabled button', createModal('Vender tudo', { disabled: true })]
+  ])('does not confirm a rejected modal: %s', async (_label, modal) => {
+    settings.autoConfirmSale = true; const sell = renderGame('32 / 32')!; const confirm = vi.spyOn(modal.confirm, 'click');
+    vi.spyOn(sell, 'click').mockImplementation(() => document.body.append(modal.card)); const stop = startAutoSellObserver();
+    await settle(); await vi.advanceTimersByTimeAsync(CONFIRMATION_TIMEOUT_MS); expect(confirm).not.toHaveBeenCalled(); stop();
+  });
+  it('does not use a confirmation button outside the validated card', async () => {
+    settings.autoConfirmSale = true; const sell = renderGame('32 / 32')!; const modal = createModal(); modal.confirm.remove();
+    const outside = document.createElement('button'); outside.id = 'confirm-yes'; outside.textContent = 'Vender tudo'; const confirm = vi.spyOn(outside, 'click');
+    vi.spyOn(sell, 'click').mockImplementation(() => { document.body.append(modal.card, outside); }); const stop = startAutoSellObserver();
+    await settle(); await vi.advanceTimersByTimeAsync(CONFIRMATION_TIMEOUT_MS); expect(confirm).not.toHaveBeenCalled(); stop();
+  });
+  it('dispatches one confirmation for multiple mutations', async () => {
+    settings.autoConfirmSale = true; const sell = renderGame('32 / 32')!; const modal = createModal();
+    vi.spyOn(sell, 'click').mockImplementation(() => document.body.append(modal.card));
+    const confirm = vi.spyOn(modal.confirm, 'click').mockImplementation(() => { sell.disabled = true; }); const stop = startAutoSellObserver();
+    await settle(); modal.card.classList.add('one'); modal.card.classList.add('two'); await settle(); expect(confirm).toHaveBeenCalledOnce(); stop();
+  });
+  it('prevents confirmation when disabled while waiting for the modal', async () => {
+    settings.autoConfirmSale = true; const sell = renderGame('32 / 32')!; const modal = createModal(); const confirm = vi.spyOn(modal.confirm, 'click');
+    vi.spyOn(sell, 'click').mockImplementation(() => { setTimeout(() => document.body.append(modal.card), 1_000); }); const stop = startAutoSellObserver();
+    await settle(); changeSettings({ autoSellEnabled: false, autoSellThreshold: 30, autoConfirmSale: true });
+    await vi.advanceTimersByTimeAsync(1_000); expect(confirm).not.toHaveBeenCalled(); stop();
+  });
+  it('reports timeout when the confirmation modal is absent', async () => {
+    settings.autoConfirmSale = true; renderGame('32 / 32'); const stop = startAutoSellObserver(); await settle();
+    await vi.advanceTimersByTimeAsync(CONFIRMATION_TIMEOUT_MS);
+    expect(sent.some((message) => (message as { payload?: { confirmationState?: string } }).payload?.confirmationState === 'confirmation-timeout')).toBe(true); stop();
+  });
+  it('does not repeat a sale when cooldown is absent', async () => {
+    settings.autoConfirmSale = true; const sell = renderGame('32 / 32')!; const modal = createModal(); const sellClick = vi.spyOn(sell, 'click').mockImplementation(() => document.body.append(modal.card));
+    const confirm = vi.spyOn(modal.confirm, 'click'); const stop = startAutoSellObserver(); await settle();
+    await vi.advanceTimersByTimeAsync(COOLDOWN_TIMEOUT_MS + CLICK_GUARD_MS); expect(confirm).toHaveBeenCalledOnce(); expect(sellClick).toHaveBeenCalledOnce();
+    expect(sent.some((message) => (message as { payload?: { confirmationState?: string } }).payload?.confirmationState === 'sale-result-unconfirmed')).toBe(true); stop();
+  });
+  it('cleans confirmation observer and timeout on controller cleanup', async () => {
+    settings.autoConfirmSale = true; renderGame('32 / 32'); const stop = startAutoSellObserver(); await settle(); stop();
+    const count = sent.length; await vi.advanceTimersByTimeAsync(CONFIRMATION_TIMEOUT_MS + COOLDOWN_TIMEOUT_MS); expect(sent).toHaveLength(count); expect(listeners.size).toBe(0);
+  });
+  it('rearms after cooldown and completes two consecutive sales', async () => {
+    settings.autoConfirmSale = true; const sell = renderGame('32 / 32')!; const confirmClicks = vi.fn();
+    const sellClick = vi.spyOn(sell, 'click').mockImplementation(() => {
+      const modal = createModal(); document.body.append(modal.card);
+      vi.spyOn(modal.confirm, 'click').mockImplementation(() => { confirmClicks(); modal.card.remove(); sell.disabled = true; sell.classList.add('cd'); });
+    });
+    const stop = startAutoSellObserver(); await settle();
+    expect(sellClick).toHaveBeenCalledOnce(); expect(confirmClicks).toHaveBeenCalledOnce();
+    const cooldownStatus = sent.at(-1) as { payload?: { saleInProgress?: boolean; cooldownActive?: boolean; observerRunning?: boolean } };
+    expect(cooldownStatus.payload).toMatchObject({ saleInProgress: false, cooldownActive: true, observerRunning: true });
+    await vi.advanceTimersByTimeAsync(CLICK_GUARD_MS); sell.disabled = false; sell.classList.remove('cd'); await settle();
+    expect(sellClick).toHaveBeenCalledTimes(2); expect(confirmClicks).toHaveBeenCalledTimes(2); stop();
+  });
+  it('does not start a second sale below threshold after cooldown', async () => {
+    settings.autoConfirmSale = true; const sell = renderGame('32 / 32')!;
+    const sellClick = vi.spyOn(sell, 'click').mockImplementation(() => {
+      const modal = createModal(); document.body.append(modal.card);
+      vi.spyOn(modal.confirm, 'click').mockImplementation(() => { modal.card.remove(); sell.disabled = true; });
+    });
+    const stop = startAutoSellObserver(); await settle(); document.querySelector('#inv-count')!.textContent = '30 / 32';
+    await vi.advanceTimersByTimeAsync(CLICK_GUARD_MS); sell.disabled = false; await settle(); expect(sellClick).toHaveBeenCalledOnce(); stop();
+  });
+  it('detects a replacement sell button and ignores cooldown timer text churn', async () => {
+    settings.autoConfirmSale = true; const first = renderGame('32 / 32')!; const info = vi.spyOn(console, 'info');
+    vi.spyOn(first, 'click').mockImplementation(() => {
+      const modal = createModal(); document.body.append(modal.card);
+      vi.spyOn(modal.confirm, 'click').mockImplementation(() => { modal.card.remove(); first.disabled = true; first.classList.add('cd'); });
+    });
+    const stop = startAutoSellObserver(); await settle();
+    const evaluations = () => info.mock.calls.filter(([message]) => message === '[AutoSell] evaluation started').length;
+    const beforeChurn = evaluations(); first.textContent = '0:03'; first.textContent = '0:02'; first.textContent = '0:01'; await settle();
+    expect(evaluations()).toBe(beforeChurn);
+    await vi.advanceTimersByTimeAsync(CLICK_GUARD_MS);
+    const replacement = document.createElement('button'); replacement.id = 'sell-all'; replacement.textContent = 'venda';
+    const replacementClick = vi.spyOn(replacement, 'click').mockImplementation(() => {
+      const modal = createModal(); document.body.append(modal.card);
+      vi.spyOn(modal.confirm, 'click').mockImplementation(() => { modal.card.remove(); replacement.disabled = true; });
+    });
+    first.replaceWith(replacement); await settle(); expect(replacementClick).toHaveBeenCalledOnce(); stop();
+  });
+  it('does not rearm when auto sell is disabled during cooldown', async () => {
+    settings.autoConfirmSale = true; const sell = renderGame('32 / 32')!;
+    const sellClick = vi.spyOn(sell, 'click').mockImplementation(() => {
+      const modal = createModal(); document.body.append(modal.card);
+      vi.spyOn(modal.confirm, 'click').mockImplementation(() => { modal.card.remove(); sell.disabled = true; });
+    });
+    const stop = startAutoSellObserver(); await settle(); changeSettings({ autoSellEnabled: false, autoSellThreshold: 30, autoConfirmSale: true });
+    await vi.advanceTimersByTimeAsync(CLICK_GUARD_MS); sell.disabled = false; await settle(); expect(sellClick).toHaveBeenCalledOnce(); stop();
   });
 });

@@ -23,6 +23,7 @@ export interface AutoSellStatus {
   controllerInitialized: boolean;
   observerRunning: boolean;
   enabled: boolean;
+  autoConfirmSale: boolean;
   inventoryCount: number | null;
   threshold: number;
   sellButtonFound: boolean;
@@ -30,6 +31,16 @@ export interface AutoSellStatus {
   lastBlockReason: string;
   lastEvaluationAt?: string;
   lastClickAt?: string;
+  confirmationModalFound: boolean;
+  confirmationButtonFound: boolean;
+  confirmationState: string;
+  lastConfirmationAt?: string;
+  cooldownDetected: boolean;
+  saleInProgress: boolean;
+  cooldownActive: boolean;
+  cycleState: string;
+  lastCooldownStartedAt?: string;
+  lastCooldownFinishedAt?: string;
 }
 
 export interface SelectorDiagnostic {
