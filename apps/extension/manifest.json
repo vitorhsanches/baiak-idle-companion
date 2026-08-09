@@ -1,20 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Baiak Idle Companion",
-  "description": "Painel local de análise com venda automática opcional e explicitamente ativada.",
+  "description": "Local action assistant for Baiak Idle.",
   "version": "0.1.0",
   "permissions": ["sidePanel", "storage"],
-  "background": { "service_worker": "background.js", "type": "module" },
-  "content_scripts": [
-    {
-      "matches": [
-        "https://baiakidle.com/jogar",
-        "https://baiakidle.com/jogar/*"
-      ],
-      "js": ["content.js"],
-      "run_at": "document_idle"
-    }
-  ],
+  "content_scripts": [{
+    "matches": ["https://baiakidle.com/jogar", "https://baiakidle.com/jogar/*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }],
   "side_panel": { "default_path": "index.html" },
-  "action": { "default_title": "Abrir Baiak Idle Companion" }
+  "action": { "default_title": "Open Baiak Idle Companion" }
 }

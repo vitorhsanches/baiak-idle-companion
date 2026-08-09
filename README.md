@@ -1,44 +1,27 @@
 # Baiak Idle Companion
 
-Inclui integração experimental Live DOM e venda automática opt-in, ambas locais e desativadas por padrão, restritas a `https://baiakidle.com/jogar/*`. A venda automática é a única exceção ao modo read-only: quando explicitamente ativada, pode chamar `click()` somente no botão visível `#sell-all`. A compatibilidade autenticada e as regras do jogo ainda precisam de validação manual.
+Local action assistant for Baiak Idle.
 
-Extensão Chrome assistiva para análises locais. O modo demo continua padrão; a integração não coleta credenciais nem usa APIs internas, rede ou storage do jogo. A única ação suportada é a venda automática opt-in descrita acima.
+The Chrome Manifest V3 extension provides an action-first side panel. Its first action is Auto Sell, explicitly enabled by the user and executed locally by a static content script on `https://baiakidle.com/jogar` and its child routes.
 
-O MVP inclui contratos para leitura DOM passiva opt-in, importação manual de catálogos JSON versão 1 com checksum e cálculos locais. Nenhum dado é enviado a servidores externos.
+## Auto Sell
 
-Catálogos, perfil de dano manual, regras locais de inventário e backups são mantidos localmente e versionados. A exportação inclui os catálogos ativos para permitir restauração offline; o limite de importação de catálogo individual é 1 MB.
+Auto Sell watches the visible inventory count and Sell button. When inventory is above the configured threshold and the button is ready, it opens the sale. Confirmation can remain manual or be explicitly automated. A single debounced `MutationObserver` reacts to relevant DOM transitions, while a one-second timer provides a reliability fallback.
 
-## Começar
+Settings are stored at `companion.actions.settings`; operational status is stored separately at `companion.actions.status`. The Debug screen shows only action state, relevant DOM facts, timestamps, errors, and up to 50 local logs.
 
-Requer Node.js 24+ e npm 11+.
+## Safety
 
-```bash
+The extension has only `sidePanel` and `storage` permissions. It has no remote API, network interception, cookies, game storage access, telemetry, WebSocket usage, or character control. The content script runs in the default isolated world only on the two declared Baiak Idle routes.
+
+## Development
+
+```sh
 npm install
-npm run dev
 npm run lint
 npm run typecheck
 npm test
 npm run build
 ```
 
-## Carregar no Chrome
-
-1. Execute `npm run build`.
-2. Abra `chrome://extensions`.
-3. Ative **Modo do desenvolvedor**.
-4. Clique em **Carregar sem compactação**.
-5. Selecione `dist/extension`.
-6. Fixe a extensão e clique no ícone para abrir o painel lateral.
-
-Os números do modo demo são simulados. O projeto não envia dados a servidores externos. Não habilite a venda automática antes de confirmar as regras do jogo e concluir o teste manual.
-
-## Workspaces
-
-- `apps/extension`: Manifest V3, service worker mínimo e painel React.
-- `packages/domain`: modelos e invariantes do negócio.
-- `packages/game-adapter`: contrato de leitura e provider mock.
-- `packages/optimizer-core`: cálculos puros.
-- `packages/shared`: formatação compartilhada.
-- `docs`: arquitetura, segurança e roadmap.
-
-Os projetos públicos citados no briefing serviram apenas como referências conceituais; nenhum código, texto, arquivo ou recurso foi copiado.
+The build verifier ensures `dist/extension/content.js` is a self-contained IIFE and checks the manifest and runtime for forbidden capabilities.

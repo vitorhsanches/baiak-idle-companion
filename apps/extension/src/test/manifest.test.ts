@@ -12,7 +12,7 @@ describe('manifest security', () => {
   });
   it('declares Manifest V3 and local entry points only', () => {
     expect(manifest.manifest_version).toBe(3);
-    expect(manifest.background?.service_worker).toBe('background.js');
+    expect(manifest).not.toHaveProperty('background');
     expect(manifest.side_panel?.default_path).toBe('index.html');
     expect(manifest.content_scripts).toEqual([{
       matches: ['https://baiakidle.com/jogar', 'https://baiakidle.com/jogar/*'],

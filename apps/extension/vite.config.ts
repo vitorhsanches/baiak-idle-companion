@@ -14,24 +14,12 @@ export default defineConfig({
       }
     }
   ],
-  resolve: {
-    alias: {
-      '@companion/domain': resolve(__dirname, '../../packages/domain/src/index.ts'),
-      '@companion/game-adapter': resolve(__dirname, '../../packages/game-adapter/src/index.ts'),
-      '@companion/optimizer-core': resolve(__dirname, '../../packages/optimizer-core/src/index.ts'),
-      '@companion/shared': resolve(__dirname, '../../packages/shared/src/index.ts')
-    }
-  },
   build: {
     modulePreload: { polyfill: false },
     outDir: resolve(__dirname, '../../dist/extension'),
     emptyOutDir: true,
     rollupOptions: {
-      input: {
-        sidepanel: resolve(__dirname, 'index.html'),
-        background: resolve(__dirname, 'src/background/index.ts')
-      },
-      output: { entryFileNames: (chunk) => chunk.name === 'background' ? 'background.js' : 'assets/[name]-[hash].js' }
+      input: { sidepanel: resolve(__dirname, 'index.html') }
     }
   }
 });

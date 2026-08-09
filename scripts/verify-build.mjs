@@ -20,7 +20,8 @@ if (manifest.content_scripts?.length !== 1) fail('exactly one content script is 
 const contentScript = manifest.content_scripts[0];
 if (JSON.stringify(contentScript.matches) !== JSON.stringify(['https://baiakidle.com/jogar', 'https://baiakidle.com/jogar/*'])) fail('content script route is not minimal');
 if (contentScript.run_at !== 'document_idle' || 'world' in contentScript) fail('content script must use the default isolated world at document_idle');
-for (const entry of [manifest.background?.service_worker, manifest.side_panel?.default_path, ...contentScript.js]) if (typeof entry !== 'string' || !existsSync(resolve(outputDirectory, entry))) fail(`missing manifest entry: ${entry}`);
+if ('background' in manifest) fail('background is unnecessary for the action-first runtime');
+for (const entry of [manifest.side_panel?.default_path, ...contentScript.js]) if (typeof entry !== 'string' || !existsSync(resolve(outputDirectory, entry))) fail(`missing manifest entry: ${entry}`);
 const builtContentScript = read(resolve(outputDirectory, 'content.js'));
 const contentViolations = contentScriptViolations(builtContentScript);
 if (contentViolations.length) fail(`content.js is not self-contained: ${contentViolations.join(', ')}`);
@@ -36,7 +37,7 @@ for (const file of files) {
     if (/<(?:script|link)\b[^>]+(?:src|href)=['"]https?:\/\//i.test(content)) fail(`remote HTML asset in ${name}`);
   }
 }
-for (const directory of ['apps/extension/src', 'packages/game-adapter/src']) for (const file of listFiles(resolve(directory))) {
+for (const directory of ['apps/extension/src']) for (const file of listFiles(resolve(directory))) {
   if (!/\.(?:ts|tsx)$/.test(file) || /\.test\.(?:ts|tsx)$/.test(file)) continue;
   const content = read(file);
   for (const forbidden of ['document.cookie', 'localStorage', 'sessionStorage', 'XMLHttpRequest', 'WebSocket', 'fetch(', 'chrome.cookies', 'chrome.webRequest', 'chrome.debugger', 'world: MAIN', 'eval(', 'new Function']) if (content.includes(forbidden)) fail(`forbidden source pattern ${forbidden} in ${relative('.', file)}`);
