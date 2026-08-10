@@ -6,6 +6,8 @@ export const emptyActionStatus = (threshold = 30): ActionStatus => ({
   sellButtonFound: false, sellButtonReady: false, cooldownText: null, lastEvaluationAt: null,
   lastSellClickAt: null, lastConfirmationAt: null, lastSaleAt: null, lastError: null,
   updatedAt: new Date(0).toISOString(), observerRunning: false, safetyTimerRunning: false,
+  stateEnteredAt: new Date(0).toISOString(), stateAgeMs: 0, lastReconciliationAt: null, lastRecoveryAt: null,
+  sellButtonDisabled: false, sellButtonClasses: [], cooldownDetected: false, activeCycle: false, clickGuardRemainingMs: 0,
   inventory: { current: null, capacity: null }, threshold,
   sellButton: { found: false, ready: false, disabled: false, classes: [], cooldownText: null },
   confirmationFound: false, logs: []
