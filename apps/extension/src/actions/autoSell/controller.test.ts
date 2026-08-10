@@ -10,7 +10,7 @@ const run = () => { controller?.evaluate(); };
 const state = () => statuses.at(-1)?.state;
 
 describe('AutoSell controller', () => {
-  beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-08-09T12:00:00Z')); statuses = []; document.body.innerHTML = ''; vi.spyOn(console, 'info').mockImplementation(() => undefined); vi.spyOn(HTMLElement.prototype, 'getClientRects').mockReturnValue({ length: 1 } as DOMRectList); });
+  beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-08-09T12:00:00Z')); statuses = []; document.body.innerHTML = ''; Object.defineProperty(globalThis, 'chrome', { configurable: true, value: { runtime: { id: 'test-extension' } } }); vi.spyOn(console, 'info').mockImplementation(() => undefined); vi.spyOn(console, 'error').mockImplementation(() => undefined); vi.spyOn(HTMLElement.prototype, 'getClientRects').mockReturnValue({ length: 1 } as DOMRectList); });
   afterEach(() => { controller?.stop(); controller = undefined; vi.restoreAllMocks(); vi.useRealTimers(); });
   it('1 disabled does not click', () => { const button = renderGame(); const click = vi.spyOn(button!, 'click'); start({ enabled: false }); run(); expect(click).not.toHaveBeenCalled(); });
   it('2 equal threshold does not sell', () => { const button = renderGame('30 / 32'); const click = vi.spyOn(button!, 'click'); start(); run(); expect(click).not.toHaveBeenCalled(); expect(state()).toBe('waiting-for-threshold'); });
@@ -37,4 +37,21 @@ describe('AutoSell controller', () => {
   it('24 one controller creates one timer path', () => { renderGame(); start(); vi.advanceTimersByTime(DEBOUNCE_MS); const first = statuses.length; vi.advanceTimersByTime(SAFETY_INTERVAL_MS); expect(statuses.length).toBeGreaterThan(first); controller?.stop(); const stoppedCount = statuses.length; vi.advanceTimersByTime(SAFETY_INTERVAL_MS * 2); expect(statuses).toHaveLength(stoppedCount); });
   it('25 click error does not permanently lock', () => { const button = renderGame()!; const click = vi.spyOn(button, 'click').mockImplementationOnce(() => { throw new Error('boom'); }); start(); run(); expect(state()).toBe('error'); vi.advanceTimersByTime(CLICK_GUARD_MS); run(); expect(click).toHaveBeenCalledTimes(2); expect(state()).not.toBe('error'); });
   it('26 replaced DOM elements still work', () => { const old = renderGame()!; const oldClick = vi.spyOn(old, 'click'); start(); run(); expect(oldClick).toHaveBeenCalledOnce(); vi.advanceTimersByTime(CLICK_GUARD_MS); renderGame('32 / 32'); const fresh = document.querySelector<HTMLButtonElement>('#sell-all')!; const freshClick = vi.spyOn(fresh, 'click'); controller?.update({ ...defaults, enabled: false }); controller?.update(defaults); run(); expect(freshClick).toHaveBeenCalledOnce(); });
+  it('stops all recurring work when status storage reports context invalidation', async () => {
+    renderGame(); const disconnect = vi.spyOn(MutationObserver.prototype, 'disconnect'); let writes = 0;
+    controller = createAutoSellController(defaults, async () => { writes += 1; throw new Error('Extension context invalidated.'); });
+    await Promise.resolve(); await Promise.resolve();
+    expect(controller.getState()).toBe('disabled'); expect(disconnect).toHaveBeenCalled(); expect(vi.getTimerCount()).toBe(0);
+    const writesBeforeAdvance = writes; vi.advanceTimersByTime(SAFETY_INTERVAL_MS * 3 + DEBOUNCE_MS);
+    expect(writes).toBe(writesBeforeAdvance); expect(console.info).toHaveBeenCalledWith('[BIC] extension context invalidated; controller stopped');
+    controller.invalidateContext(); controller.evaluate();
+    expect(console.info).toHaveBeenCalledWith('[BIC] extension context invalidated; controller stopped');
+    expect(vi.mocked(console.info).mock.calls.filter(([message]) => message === '[BIC] extension context invalidated; controller stopped')).toHaveLength(1);
+  });
+  it('surfaces ordinary storage failures without stopping the controller', async () => {
+    renderGame(); const error = new Error('storage unavailable'); let firstWrite = true;
+    controller = createAutoSellController(defaults, async () => { if (firstWrite) { firstWrite = false; throw error; } });
+    await Promise.resolve(); await Promise.resolve();
+    expect(vi.getTimerCount()).toBeGreaterThan(0); expect(console.error).toHaveBeenCalledWith('[BIC AutoSell] status persistence failed', error);
+  });
 });

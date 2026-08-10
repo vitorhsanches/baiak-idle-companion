@@ -1,4 +1,5 @@
 import type { ActionSettings } from '../actions/autoSell/types';
+import { contextInvalidatedError, isExtensionRuntimeUsable } from '../content/runtime';
 export const ACTION_SETTINGS_KEY = 'companion.actions.settings';
 export const DEFAULT_ACTION_SETTINGS: ActionSettings = { autoSell: { enabled: false, autoConfirm: false, threshold: 30 } };
 export const normalizeActionSettings = (value: unknown): ActionSettings => {
@@ -8,9 +9,11 @@ export const normalizeActionSettings = (value: unknown): ActionSettings => {
   return { autoSell: { enabled: raw.enabled === true, autoConfirm: raw.autoConfirm === true, threshold } };
 };
 export const loadActionSettings = async (): Promise<ActionSettings> => {
+  if (!isExtensionRuntimeUsable()) throw contextInvalidatedError();
   const values = await chrome.storage.local.get(ACTION_SETTINGS_KEY);
   return normalizeActionSettings(values[ACTION_SETTINGS_KEY]);
 };
 export const saveActionSettings = async (settings: ActionSettings): Promise<void> => {
+  if (!isExtensionRuntimeUsable()) throw contextInvalidatedError();
   await chrome.storage.local.set({ [ACTION_SETTINGS_KEY]: normalizeActionSettings(settings) });
 };
