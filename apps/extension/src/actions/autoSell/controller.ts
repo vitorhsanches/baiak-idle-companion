@@ -35,7 +35,7 @@ export const createAutoSellController = (initial: ActionSettings['autoSell'], wr
     if (!snapshot.button || !snapshot.ready) { cycleActive = false; transition('waiting-for-sell-button'); return snapshot; }
     if (staleTransient()) recover();
     else if (state === 'waiting-for-manual-confirmation' || state === 'error') { cycleActive = false; transition('waiting-for-sell-button'); }
-    else if (!cycleActive) transition('waiting-for-sell-button');
+    else { cycleActive = false; transition('waiting-for-sell-button'); }
     updateStatus(snapshot, true); return snapshot;
   };
   const evaluate = (): void => {
@@ -43,7 +43,6 @@ export const createAutoSellController = (initial: ActionSettings['autoSell'], wr
     try {
       if (snapshot.modal) { if (!settings.autoConfirm || confirmationAttempted || !canConfirmSale(snapshot.modal)) { persist(); return; } transition('confirming-sale'); const current = findSaleConfirmation(); if (!settings.enabled || !current || current.card !== snapshot.modal.card || !canConfirmSale(current)) { cycleActive = false; transition('error'); status.lastError = 'Confirmation became invalid'; persist(); return; } if (!isExtensionRuntimeUsable()) { invalidateContext(); return; } current.confirm.click(); confirmationAttempted = true; status.lastConfirmationAt = new Date().toISOString(); transition('waiting-for-cooldown'); updateStatus(inspect(), false); persist(); return; }
       if (!snapshot.inventory || snapshot.inventory.current <= settings.threshold || !snapshot.button || !snapshot.ready) { persist(); return; }
-      if (cycleActive && !staleTransient()) { persist(); return; }
       if (Date.now() - lastClickAt < CLICK_GUARD_MS) { persist(); return; }
       const button = readSellButton(); const inventory = readInventory(); const modal = findSaleConfirmation(); if (!isExtensionRuntimeUsable()) { invalidateContext(); return; }
       if (!settings.enabled || modal || !button || !isSellButtonReady(button) || !inventory || inventory.current <= settings.threshold) { updateStatus(inspect(), false); persist(); return; }
