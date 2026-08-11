@@ -3,9 +3,16 @@ export interface AutoSellSettings { enabled: boolean; autoConfirm: boolean; thre
 export interface ActionSettings { autoSell: AutoSellSettings }
 export interface ActionLog { at: string; message: string }
 export interface ActionStatus {
-  connected: boolean; state: AutoSellState;
+  contentScriptConnected: boolean; state: AutoSellState;
+  inventoryCurrent: number | null; inventoryCapacity: number | null;
+  sellButtonFound: boolean; sellButtonReady: boolean; cooldownText: string | null;
+  lastEvaluationAt: string | null; lastSellClickAt: string | null;
+  lastConfirmationAt: string | null; lastSaleAt: string | null; lastError: string | null;
+  updatedAt: string; observerRunning: boolean; safetyTimerRunning: boolean;
+  stateEnteredAt: string; stateAgeMs: number; lastReconciliationAt: string | null; lastRecoveryAt: string | null;
+  sellButtonDisabled: boolean; sellButtonClasses: string[]; cooldownDetected: boolean;
+  activeCycle: boolean; clickGuardRemainingMs: number;
   inventory: { current: number | null; capacity: number | null }; threshold: number;
   sellButton: { found: boolean; ready: boolean; disabled: boolean; classes: string[]; cooldownText: string | null };
-  confirmationFound: boolean; lastEvaluation: string | null; lastSellClick: string | null;
-  lastConfirmation: string | null; lastSale: string | null; lastError: string | null; logs: ActionLog[];
+  confirmationFound: boolean; logs: ActionLog[];
 }
